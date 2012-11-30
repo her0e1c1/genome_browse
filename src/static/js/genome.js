@@ -1,6 +1,6 @@
 //global settings
 var HOST = "http://localhost:5000"
-
+var GENOME; 
 
 function _DEBUG(){
 	var txt = "";
@@ -32,9 +32,6 @@ function _DEBUG(){
 			this.view = new Array([0,0]);  // 表示する位置 (x, y)で表示
 			this.point = new Array([0,0]);  // 画像データの位置 (x, y)で表示
 			this.URL = window.document.URL;
-
-			//css("left")がブラウザによって異なる
-			$("#show_images").css("left", 0)
 
 			//event 登録
 			$("#controller_button_left").click(function(){
@@ -71,14 +68,14 @@ function _DEBUG(){
 	*/
 	function _update(left_or_right, mode){
 		var n, left;
-		n = $("#show_images");
+		n = $("#show_images img");
 		left = _px2int(n.css("left"));
 		left += 10 * left_or_right;
 		n.css("left", left)
 	}
 
 	//cssの値でpxの場合、とって数値にする
-	//100px(文字列) => 100(数値)
+	//"100px"(文字列) => 100(数値)
 	function _px2int(str){
 		return parseInt(str.replace("px" ,""))
 	}
@@ -95,11 +92,10 @@ window.onload = function(){
 	//モジュールを呼び出す
 	$("#show_images").append("<img />");
 	$("img").attr("src","/static/images/sample.png")
+	$("#show_images").append("<img />");
+	$("img").eq(1).attr("src","/static/images/sample1.png")
+	$("#show_images").prepend("<img />");
+	$("img").eq(0).attr("src","/static/images/sample2.png")
+	GENOME = new genome();
 
-	var g = new genome();
-
-	//debug code
-//$("#controller_button_left").click();
 }
-
-//function update(){}

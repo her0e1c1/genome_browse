@@ -1,7 +1,22 @@
-
+*{
+ margin:0px;
+ padding:0px;
+}
+#wrap{
+ border:5px solid black;
+ width:800px;
+ overflow:hidden;
+}
 #show_images {
- border: 5px solid black;
- width: 800px;
+ width: 4000px;
+ height: 400px;
  position: relative;
 }
 
+img {
+ float:left;
+ border: 5px solid red;
+ position: relative;
+ top: 0px;
+ left: 0px;
+}
