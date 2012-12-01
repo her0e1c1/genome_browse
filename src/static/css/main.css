@@ -8,14 +8,14 @@
  overflow:hidden;
 }
 #show_images {
- width: 4000px;
+ width: 8000px;
  height: 400px;
  position: relative;
 }
 
 img {
  float:left;
- border: 5px solid red;
+ border: 1px solid red;
  position: relative;
  top: 0px;
  left: 0px;
