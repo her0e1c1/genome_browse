@@ -6,8 +6,8 @@ function _DEBUG(){
 	var txt = "";
 	left = $("#show_images").position().left;
 	txt += "; left:" + left;
-	txt += "; view_start:" + GENOME.get_view()[0];
-	txt += "; view_stop:" + GENOME.get_view()[1];
+	txt += "; view.start:" + GENOME.get_view().start;
+	txt += "; view.stop:" + GENOME.get_view().stop;
 
 	$("#debug").text(txt);
 }
@@ -24,7 +24,7 @@ function _DEBUG(){
 	/*
 	  取得した画像を格納する配列
 	  必ず隣同士が連番な鎖状のデータ構造
-	  
+
 	  キャッシュの役割も担っています。
 	 */
 	var images = new Array();
@@ -73,8 +73,12 @@ function _DEBUG(){
 	};
 
 	//private 変数
-	var view_start;
-	var layer;
+	// 表示される配列の開始位置
+	var view = {
+		start: 0, 
+		stop: 0,
+	};
+	var layer = 100;
 	var path = {images: "/static/images/"};
 
 	//定数
@@ -90,11 +94,6 @@ function _DEBUG(){
 	//public methods
 	genome.prototype = {
 		init: function(){
-			//private variable
-			view_start = 0;  // 表示される配列の開始位置
-			layer = 100;  // 画像のレイヤーを決める
-			point = [0, 0];
-			URL = window.document.URL;
 
 			//select表示
 			_set_init_option()
@@ -111,17 +110,16 @@ function _DEBUG(){
 			});
 
 			//test_code
-			view_start = 1401;
-			this.get_image(view_start + layer, layer, "sample");
-			this.get_image(view_start, layer, "sample");
+			view.start = 1401;
+			this.get_image(view.start + layer, layer, "sample");
+			this.get_image(view.start, layer, "sample");
 
 		},
 
-		//viewの終わりは、view_startとlayerから算出します。
+		//viewの終わりは、view.startとlayerから算出します。
 		get_view : function(){
-			var stop;
-			stop = view_start + layer - 1;
-			return [view_start, stop]
+			view.stop = view.start + layer - 1;
+			return view
 		},
 		get_layer: function(){
 			return layer;
@@ -144,7 +142,7 @@ function _DEBUG(){
 			src = src + start;
 			console.log("image path: " + src);
 			n =$("#show_images");
-			if(start > view_start){
+			if(start > view.start){
 				n.append("<img />");
 				n.children(":last").attr("src", src);
 			}
@@ -184,7 +182,7 @@ function _DEBUG(){
 		left = _px2int(n.css("left"));
 		var scroll_size = (layer * left_or_right) / 5;
 		left += scroll_size * _change();
-		view_start -= scroll_size;
+		view.start -= scroll_size;
 		n.css("left", left)
 	};
 
