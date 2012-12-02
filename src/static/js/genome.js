@@ -266,7 +266,7 @@ function _DEBUG(){
 
 //init
 window.onload = function(){
-	setInterval(_DEBUG, 1);
+	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
 	GENOME = new genome();
 }
