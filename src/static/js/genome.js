@@ -8,7 +8,7 @@ function _DEBUG(){
 	txt += "; left:" + left;
 	txt += "; view.start:" + GENOME.get_view().start;
 	txt += "; view.stop:" + GENOME.get_view().stop;
-
+//	txt += "; point.start:" + GENOME.get_images().point
 	$("#debug").text(txt);
 }
 
@@ -21,21 +21,6 @@ function _DEBUG(){
 (function(window){
 
 	//private class
-	/*
-	  取得した画像を格納する配列
-	  必ず隣同士が連番な鎖状のデータ構造
-
-	  キャッシュの役割も担っています。
-	 */
-	var images = new Array();
-
-	/*
-	  imagesで表示できる配列の範囲データをもつ
-	 */
-	var point = {
-		start:0,
-		stop:0
-	};
 
 	Image = function(start, layer, src){
 		//private 変数
@@ -49,25 +34,49 @@ function _DEBUG(){
 
 	};
 
-	//Imageクラスを扱う関数
-	function _add_image(image){
-		var start = image.start;
-		var stop = image.stop;
-		//初期状態
-		if(images.length === 0){
-			point.start = start;
-			point.stop = stop;
-		}
-		else if(point.start - 1 === stop){
-			images.unshift(image);
-			point.start = start;
-		}
-		else if(point.stop + 1 === start){
-			images.push(image);
-			point.stop = stop;
-		}
+	/*
+	  Imageクラスを格納するクラス
+	  取得した画像を格納する配列
+	  必ず隣同士が連番な鎖状のデータ構造
+	  キャッシュの役割も担っています。
+	 */
+	ImageList = function(){
+		this.images = new Array();
+		/*
+		  imagesで表示できる配列の範囲データをもつ
+		*/
+		this.point = {
+			start:0,
+			stop:0
+		};
 	};
 
+	ImageList.prototype = {
+		add: function(image){
+			var start = image.start;
+			var stop = image.stop;
+			//初期状態
+			if(this.length === 0){
+				this.point.start = start;
+				this.point.stop = stop;
+				this.push(image);
+			}
+			else if(this.point.start - 1 === stop){
+				this.unshift(image);
+				this.point.start = start;
+			}
+			else if(this.point.stop + 1 === start){
+				this.push(image);
+				this.point.stop = stop;
+			}
+		},
+		get_all: function(){
+			return this.images;
+		},
+	};
+
+
+	//以下genome browserに関する記述です。
 	var genome = function(){
 		this.init.apply(this, arguments)
 	};
@@ -80,6 +89,9 @@ function _DEBUG(){
 	};
 	var layer = 100;
 	var path = {images: "/static/images/"};
+
+	//ImageListクラスを扱うstaticな変数にする
+	var imagelist = new ImageList();
 
 	//定数
 
@@ -99,7 +111,7 @@ function _DEBUG(){
 			_set_init_option()
 
 			//imgの枚数を設定
-			_set_init_img()
+			_set_init_img(10)
 
 			//event登録
 			$("#controller_button_left").click(function(){
@@ -116,6 +128,7 @@ function _DEBUG(){
 
 		},
 
+		//private変数にアクセスするメソッド
 		//viewの終わりは、view.startとlayerから算出します。
 		get_view : function(){
 			view.stop = view.start + layer - 1;
@@ -124,7 +137,9 @@ function _DEBUG(){
 		get_layer: function(){
 			return layer;
 		},
-
+		get_images: function(){
+			return imagelist.get_all();
+		},
 		/*
 		  画像を取得する場合
 		  取得するパスは
@@ -137,11 +152,17 @@ function _DEBUG(){
 				layer = $("#controller_select :selected").val();
 			}
 
+			//class作成
+			var i = new Image(start, layer, name);
+
+			//画像のパスを作成
 			start = start + ".png";
 			var src = _join(_join(path.images, name), layer);
 			src = src + start;
 			console.log("image path: " + src);
 			n =$("#show_images");
+
+			//実際にアクセスする
 			if(start > view.start){
 				n.append("<img />");
 				n.children(":last").attr("src", src);
@@ -151,8 +172,7 @@ function _DEBUG(){
 				n.children(":first").attr("src", src);
 
 				//取得後にクラスへの登録もする
-				var i = new Image(start, layer, name);
-				_add_image(i);
+				imagelist.add(i);
 			}
 		},
 	};
