@@ -46,6 +46,12 @@ Image = function(start, layer, name){
 	this.start = start;
 	this.layer = layer;
 	this.name = name;
+	/*
+	  画像を取得する場合
+	  取得するパスsrcは
+	  /static/images/name/layer/start.png
+	  のようになっています。
+	*/
 	this.src = _make_src_path(start, layer, name)
 	this.stop = start + layer - 1;
 
@@ -185,13 +191,10 @@ ImageList.prototype = {
 		init: function(start, layer, name){
 
 			//public変数
-			var stop = this.get_view_stop(start);
-			this.view ={
-				start: start,
-				stop: stop,
-			};
-			this.layer = layer;
-			this.name = name;
+			this.view;
+			this.layer;
+			this.name;
+			this.imagelist;
 
 			//ImageListクラスを扱うstaticな変数にする?
 			//this.imagelist;
@@ -269,58 +272,37 @@ ImageList.prototype = {
 		 */
 		slide_with_offset: function(offset){
 			var n, left;
-			$("#show_images img").css("left", 0);
 			n = $("#show_images img");
+			//ずらす前に初期値０に設定します。
+			n.css("left", 0);
 			left = _px2int(n.eq(0).css("left"));
 			left -= offset * this.get_width_per_dna();
-			//_view.start += offset;
 			n.css("left", left);
 		},
 
 		/*
-		  画像を取得する場合
-		  取得するパスは
-		  /static/images/name/layer/start.png
-		  のようになっています。
+		  画像の再度読み込みは、こちらの関数で行います。
+		  init関数では、
+		  htmlの初期化
+		  eventハンドラの登録
+		  を行いますので、
+		  画像の再描写のみであれば、こちらを呼びます。
 		 */
-		get_image: function (){
-
-			if(layer === undefined){
-				layer = $("#controller_select :selected").val();
-			}
-
-			//class作成
-			var i = new Image(start, layer, name);
-
-			//画像のパスを作成
-			start = start + ".png";
-			var src = _join(_join(path.images, name), layer);
-			src = src + start;
-			console.log("image path: " + src);
-			var n =$("#show_images");
-
-			//実際にアクセスする
-			if(start > view.start){
-				n.append("<img />");
-				n.children(":last").attr("src", src);
-			}
-			else{
-				n.prepend("<img />");
-				n.children(":first").attr("src", src);
-
-				//取得後にクラスへの登録もする
-				this.imagelist.add(i);
-			}
-		},
-
 		first_show: function(start, layer, name){
+
+			var stop = this.get_view_stop(start);
+			this.view ={
+				start: start,
+				stop: stop,
+			};
+			this.layer = layer;
+			this.name = name;
+
 			/*
 			  残像が残る可能性があります。
-			  一度imgの属性hrefを削除します。
+			  一度imgの属性srcを削除します。
 			 */
-			$("#show_images img")
-				//.hide()
-				.removeAttr("src");
+			$("#show_images img").removeAttr("src");
 
 			/*
 			  画像の開始が1234のような中途半端な値の場合にも
@@ -328,14 +310,8 @@ ImageList.prototype = {
 			*/
 			var _start = this.get_image_start(start, layer);
 			this.imagelist = new ImageList(_start, layer, name);
-			this.show_images();
-			//startの位置に画像をずらします。
-			var offset;
-			offset = start - this.imagelist.point.start;
-			this.slide_with_offset(offset);
-			
-			//再描画
-			//$("#show_images img").show();
+			//描画
+			this.show();
 		},
 		/*
 		  imgaelistのデータを全て表示します。
@@ -348,7 +324,21 @@ ImageList.prototype = {
 			}
 		},
 
-		//画像の描写を更新するクラス
+		/*
+		  画像の描画は
+		  (1)ImageListの配列を全て表示
+		  (2)view.startから表示するために画像をずらす
+		  以上のことを実行します。
+
+		  この関数を呼ぶ前には、imagelistは更新しておく必要があります。
+		 */
+		show: function(){
+			this.show_images();
+			var offset = this.view.start - this.imagelist.point.start;
+			this.slide_with_offset(offset);
+		},
+
+		//画像の描写を更新する
 		update: function(){
 
 			var update_point = this.imagelist.get_update_point();
@@ -356,6 +346,7 @@ ImageList.prototype = {
 			/*
 			  条件に合致したらimagelistを書き換えます。
 			  (IMAGE_NUMBER) - 1 / 2回
+			  IMAGE_NUMBERが奇数である条件が効いています。
 			*/
 			var left_or_right;
 			if(update_point.start > this.view.start){
@@ -365,17 +356,18 @@ ImageList.prototype = {
 				left_or_right = -1;
 			}
 			else{
+				//条件に当てはまらない場合は何もしません。
 				return;
 			}
+			
 			for(var i = 0; i < (IMAGE_NUMBER - 1) / 2; i++ ){
 				this.imagelist.update(left_or_right);
 			}
-			this.show_images();
-			$("#show_images img").css("left", 0)
-			var offset = this.view.start - this.imagelist.point.start;
-			this.slide_with_offset(offset);
-
+			this.show();
 		},
+
+		//eventハンドラー
+
 		/*
 		  left_or_right
 		  -1の場合　左へ更新
@@ -398,9 +390,6 @@ ImageList.prototype = {
 		_update_click_select: function(event){
 			var value;
 			value = parseInt($(event).children(":selected").val());
-			//値の更新
-			this.layer = value;
-			this.view.stop = this.get_view_stop(this.view.start, value);
 			this.first_show(this.view.start, value, this.name);
 		},
 	};
