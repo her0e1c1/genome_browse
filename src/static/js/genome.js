@@ -356,6 +356,7 @@ ImageList.prototype = {
 		  画像の描画は
 		  (1)ImageListsの配列を全て表示
 		  (2)view.startから表示するために画像をずらす
+		  (3)内部データを表示させます。
 		  以上のことを実行します。
 
 		  この関数を呼ぶ前には、imagelistsは更新しておく必要があります。
@@ -364,8 +365,11 @@ ImageList.prototype = {
 			this.show_images();
 			var offset = this.view.start - this.imagelists[0].point.start;
 			this.slide_with_offset(offset);
+			this.show_info();
 		},
-
+		show_info: function(){
+			$("#input_view_start").val(this.view.start);
+		},
 		//画像の描写を更新する
 		update: function(){
 
@@ -384,7 +388,13 @@ ImageList.prototype = {
 				left_or_right = -1;
 			}
 			else{
-				//条件に当てはまらない場合は何もしません。
+				/*
+				  条件に当てはまらない場合は
+				  画像をずらすだけです。
+				  つまり、画像の書き換えはしませんが、
+				  表示するデータの変更はします。
+				*/
+				this.show_info();
 				return;
 			}
 			for(var j = 0; j < this.imagelists.length; j++){
