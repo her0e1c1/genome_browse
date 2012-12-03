@@ -6,6 +6,10 @@ var _genome;
 右にスクロールする場合は
 ゲノムの配列の番号の小さい方を表示するので
 逆に動く
+
+画像の名前は1001, 1101,1201のように決めてあるため、
+1222などをリクエストする場合は、
+1201に修正する必要があります。
 */
 
 /*
@@ -176,22 +180,26 @@ function _DEBUG(){
 		this.init.apply(this, arguments);
 	};
 
-	//private 変数
-	// 表示される配列の開始位置
-	var _view = {
-		start: 1501,
-		stop: 0,
-	};
-	var _layer = 100;
-
-	//ImageListクラスを扱うstaticな変数にする
-	var imagelist;
 
 	//public methods
 	genome.prototype = {
-		init: function(start, layer, name, offset){
-			//イベントの時に必要
+		init: function(start, layer, name){
+
+			//public変数
+			var stop = this.get_view_stop(start);
+			this.view ={
+				start: start,
+				stop: stop,
+			};
+			this.layer = layer;
+			this.name = name;
+			
+			//ImageListクラスを扱うstaticな変数にする?
+			this.imagelist;
+
+			//イベントでメソッドを呼ぶのに必要
 			var self = this;
+
 			//select表示
 			_set_init_option();
 
@@ -200,41 +208,79 @@ function _DEBUG(){
 
 			//event登録
 			$("#controller_button_left").click(function(){
-				self._update_click_button(-1)
+				self._update_click_button(this, -1)
 			});
 			$("#controller_button_right").click(function(){
-				self._update_click_button(+1)
+				self._update_click_button(this, +1)
 			});
-			//画像
-			imagelist = new ImageList(start, layer, name);
+
+			$("#controller_select").change(function(){
+				self._update_click_select(this);
+			});
+
+			//画像取得
+			var _start = this.get_image_start(start, layer);
+			this.imagelist = new ImageList(_start, layer, name);
 			this.show_images();
+
+			//startの位置に画像をずらします。
+			var offset;
+			offset = start - this.imagelist.point.start;
 			this.slide_with_offset(offset);
 		},
 
 		//private変数にアクセスするメソッド
 		//viewの終わりは、view.startとlayerから算出します。
 		get_view : function(){
-			_view.stop = _view.start + _layer - 1;
-			return _view
+			this.view.stop = this.get_view_stop(this.view.start);
+			return this.view;
 		},
 		get_layer: function(){
-			return layer;
+			return this.layer;
 		},
 		get_imagelist: function(){
-			return imagelist;
+			return this.imagelist;
 		},
+
+		/*
+		  imgaelistのデータを全て表示します。
+		 */
 		show_images: function(){
 			var n = $("#show_images");
 			for(var i = 0; i < IMAGE_NUMBER; i++){
 				var child = n.children("[value=" + i  + "]");
-				child.attr("src", imagelist.images[i].src);
+				child.attr("src", this.imagelist.images[i].src);
 			}
 		},
+		/*
+		  画像の幅とDNAの配列の幅は異なります。
+		  スクロールなどの処理をしても、ずれないようにします。
+		*/
 		get_width_per_dna: function(){
-			return IMAGE_WIDTH / _layer ;
+			return IMAGE_WIDTH / this.layer ;
 		},
 		/*
-		  offsetの差だけずらす
+		  画像の名前はGBrowseで生成するときに、
+		  予め決まっていますので、任意の値のstartを
+		  変換して、サーバー上にある画像の名前のに一致させます。
+		 */
+		get_image_start: function(start, layer){
+			if(layer === undefined){
+				layer = this.layer;
+			}
+			var offset = (start % layer) - 1;
+			return (start - offset);
+		},
+
+		get_view_stop :function(start, layer){
+			if(layer === undefined){
+				layer = this.layer;
+			}
+			return start + layer - 1;
+		},
+
+		/*
+		  表示している画像をoffsetの差だけずらします。
 		 */
 		slide_with_offset: function(offset){
 			var n, left;
@@ -276,33 +322,34 @@ function _DEBUG(){
 				n.children(":first").attr("src", src);
 
 				//取得後にクラスへの登録もする
-				imagelist.add(i);
+				this.imagelist.add(i);
 			}
 		},
 		//画像の描写を更新するクラス
 		update: function(){
-			var update_point = imagelist.get_update_point();
+
+			var update_point = this.imagelist.get_update_point();
 
 			/*
 			  条件に合致したらimagelistを書き換えます。
 			  (IMAGE_NUMBER) - 1 / 2回
 			*/
 			var left_or_right;
-			if(update_point.start > _view.start){
+			if(update_point.start > this.view.start){
 				left_or_right = +1;
 			}
-			else if(update_point.stop < _view.stop){
+			else if(update_point.stop < this.view.stop){
 				left_or_right = -1;
 			}
 			else{
 				return;
 			}
 			for(var i = 0; i < (IMAGE_NUMBER - 1) / 2; i++ ){
-				imagelist.update(left_or_right);
+				this.imagelist.update(left_or_right);
 			}
 			this.show_images();
 			$("#show_images img").css("left", 0)
-			var offset = _view.start - imagelist.point.start;
+			var offset = this.view.start - this.imagelist.point.start;
 			this.slide_with_offset(offset);
 			
 		},
@@ -312,15 +359,23 @@ function _DEBUG(){
 		  +1の場合　右へ更新
 		  スクロールの大きさはlayerの半分
 		*/
-		_update_click_button: function (left_or_right, mode){
+		_update_click_button: function (event, left_or_right){
 			var n, left;
 			n = $("#show_images img");
 			left = _px2int(n.css("left"));
-			var scroll_size = (_layer * left_or_right) / 5;
+			var scroll_size = (this.layer * left_or_right) / 5;
 			left -= scroll_size * this.get_width_per_dna();
-			_view.start += scroll_size;
+			this.view.start += scroll_size;
 			n.css("left", left)
 			this.update()
+		},
+		/*
+		  現在のstartとnameのままでlayerだけ変更します。
+		*/
+		_update_click_select: function(event){
+			var value;
+			value = $(event).children(":selected").val();
+			this.init(this.view.start, value, this.name);
 		},
 	};
 
@@ -333,24 +388,11 @@ function _DEBUG(){
 	};
 
 
-
 	//cssの値でpxの場合、とって数値にする
 	//"100px"(文字列) => 100(数値)
 	function _px2int(str){
 		return parseInt(str.replace("px" ,""))
 	};
-
-
-	/*
-	   画像データを移動させると
-	   実際の画像の表示位置と表示されている画像の位置が違う
-	   そこで、スクロールした際の比率を計算する
-	*/
-	function _change(){
-		var a;
-		return IMAGE_WIDTH / layer;
-	};
-
 
 	//init
 
@@ -401,6 +443,6 @@ function _DEBUG(){
 window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
-	_genome = new genome(1501, 100, "sample", 200);
+	//start layer nameを指定
+	_genome = new genome(1521, 100, "sample");
 }
-
