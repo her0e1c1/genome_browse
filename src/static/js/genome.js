@@ -27,15 +27,15 @@ var PATH = {images: "/static/images/"};
 function _DEBUG(){
 	var txt = "";
 	left = $("#show_images").position().left;
-	txt += "; left:" + left;
+	txt += "left:" + left;
 	txt += "; view.start:" + _genome.get_view().start;
 	txt += "; view.stop:" + _genome.get_view().stop;
-	txt += "; update_point.start:" + _genome.get_imagelist().get_update_point().start;
+	txt += ";<br /> update_point.start:" + _genome.get_imagelist().get_update_point().start;
 	txt += "; update_point.stop:" + _genome.get_imagelist().get_update_point().stop;
-	txt += "; point.start:" + _genome.get_imagelist().point.start;
+	txt += "; <br />point.start:" + _genome.get_imagelist().point.start;
 	txt += "; point.stop:" + _genome.get_imagelist().point.stop;
 
-	$("#debug").text(txt);
+	$("#debug").html(txt);
 }
 
 
@@ -269,6 +269,7 @@ ImageList.prototype = {
 		 */
 		slide_with_offset: function(offset){
 			var n, left;
+			$("#show_images img").css("left", 0);
 			n = $("#show_images img");
 			left = _px2int(n.eq(0).css("left"));
 			left -= offset * this.get_width_per_dna();
@@ -318,8 +319,8 @@ ImageList.prototype = {
 			  一度imgの属性hrefを削除します。
 			 */
 			$("#show_images img")
-				.hide()
-				.removeAttr("href");
+				//.hide()
+				.removeAttr("src");
 
 			/*
 			  画像の開始が1234のような中途半端な値の場合にも
@@ -334,7 +335,7 @@ ImageList.prototype = {
 			this.slide_with_offset(offset);
 			
 			//再描画
-			$("#show_images img").show();
+			//$("#show_images img").show();
 		},
 		/*
 		  imgaelistのデータを全て表示します。
@@ -399,6 +400,7 @@ ImageList.prototype = {
 			value = parseInt($(event).children(":selected").val());
 			//値の更新
 			this.layer = value;
+			this.view.stop = this.get_view_stop(this.view.start, value);
 			this.first_show(this.view.start, value, this.name);
 		},
 	};
@@ -470,5 +472,7 @@ window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
 	//start layer nameを指定
-	_genome = new genome(3001, 1000, "sample");
+	_genome = new genome(1501, 100, "sample");
+	//_genome = new genome(3001, 1000, "sample");
+
 };
