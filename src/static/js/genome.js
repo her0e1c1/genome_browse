@@ -228,6 +228,10 @@ ImageList.prototype = {
 				self._update_click_select(this);
 			});
 
+			$("#input_view_start").keydown(function(event){
+				return self._enter_input_view_start(this, event);
+			});
+
 			//一回目の画像の表示
 			this.first_show(start, layer, name);
 		},
@@ -399,7 +403,7 @@ ImageList.prototype = {
 		  +1の場合　右へ更新
 		  スクロールの大きさはlayerの半分
 		*/
-		_update_click_button: function (event, left_or_right){
+		_update_click_button: function (self, left_or_right){
 			var n, left;
 			n = $("#show_images img");
 			left = _px2int(n.css("left"));
@@ -412,10 +416,24 @@ ImageList.prototype = {
 		/*
 		  現在のstartとnameのままでlayerだけ変更します。
 		*/
-		_update_click_select: function(event){
+		_update_click_select: function(self){
 			var value;
-			value = parseInt($(event).children(":selected").val());
+			value = parseInt($(self).children(":selected").val());
 			this.first_show(this.view.start, value, this.name);
+		},
+
+		_enter_input_view_start: function(self,event){
+			if(event.keyCode === 13){
+				var start = parseInt($(self).val());
+				if (start){
+					this.first_show(start, this.layer, this.name);
+					return false;
+				}
+				else{
+					alert("不適切な入力です。");
+					return false;
+				}
+			}
 		},
 	};
 
@@ -487,6 +505,4 @@ window.onload = function(){
 	//モジュールを呼び出す
 	//start layer nameを指定
 	_genome = new genome(1501, 100, ["sample", "sample"]);
-	//_genome = new genome(3001, 1000, "sample");
-
 };
