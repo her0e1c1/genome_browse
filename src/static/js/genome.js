@@ -18,6 +18,7 @@ var _genome;
  この値は変更できません。
 */
 var IMAGE_WIDTH = 800;
+var IMAGE_HEIGHT = 400;
 
 //計算しやすい様に奇数
 var IMAGE_NUMBER = 5;
@@ -80,7 +81,9 @@ Image = function(start, layer, name){
 ImageList = function(){
 	this.init.apply(this, arguments);
 };
-
+/*
+  pointは先頭の０番目に合わせます。
+*/
 ImageList.prototype = {
 	init: function(start, layer, name){
 		this.start = start;
@@ -188,13 +191,17 @@ ImageList.prototype = {
 
 	//public methods
 	genome.prototype = {
+		/*
+		  nameは複数扱えるように配列になります。
+		  imagelistも配列です。ImageListのクラスの配列になります。
+		 */
 		init: function(start, layer, name){
 
 			//public変数
 			this.view;
 			this.layer;
 			this.name;
-			this.imagelist;
+			this.imagelists;
 
 			//ImageListクラスを扱うstaticな変数にする?
 			//this.imagelist;
@@ -206,7 +213,8 @@ ImageList.prototype = {
 			_set_init_option(layer);
 
 			//imgの枚数を設定
-			_set_init_img(IMAGE_NUMBER);
+			//ここで決めることができません。
+			//_set_init_img(IMAGE_NUMBER);
 
 			//event登録
 			$("#controller_button_left").click(function(){
@@ -234,7 +242,7 @@ ImageList.prototype = {
 			return this.layer;
 		},
 		get_imagelist: function(){
-			return this.imagelist;
+			return this.imagelists[0];
 		},
 
 		/*
@@ -297,7 +305,12 @@ ImageList.prototype = {
 			};
 			this.layer = layer;
 			this.name = name;
+			this.imagelists = new Array();
 
+			if(name.length === 0){
+				alert("何も選択されていません。");
+				return;
+			}
 			/*
 			  残像が残る可能性があります。
 			  一度imgの属性srcを削除します。
@@ -309,39 +322,50 @@ ImageList.prototype = {
 			  対応できるようにします。
 			*/
 			var _start = this.get_image_start(start, layer);
-			this.imagelist = new ImageList(_start, layer, name);
+			for(var i = 0; i < name.length; i++){
+				this.imagelists.push(new ImageList(_start, layer, name[i]));
+			}
 			//描画
 			this.show();
 		},
+
 		/*
 		  imgaelistのデータを全て表示します。
 		 */
 		show_images: function(){
 			var n = $("#show_images");
-			for(var i = 0; i < IMAGE_NUMBER; i++){
-				var child = n.children("[value=" + i  + "]");
-				child.attr("src", this.imagelist.images[i].src);
+			//子供の要素を一度中身をリセットします。
+			n.empty();
+			n.attr("height", IMAGE_HEIGHT);
+			for(var j = 0; j < this.imagelists.length; j++){
+				n.append("<div></div>");
+				var child = n.children(":last");
+				for(var i = 0; i < IMAGE_NUMBER; i++){
+					child.append("<img />");
+					var grand_child = child.children(":last");
+					grand_child.attr("src", this.imagelists[j].images[i].src);
+				}
 			}
 		},
 
 		/*
 		  画像の描画は
-		  (1)ImageListの配列を全て表示
+		  (1)ImageListsの配列を全て表示
 		  (2)view.startから表示するために画像をずらす
 		  以上のことを実行します。
 
-		  この関数を呼ぶ前には、imagelistは更新しておく必要があります。
+		  この関数を呼ぶ前には、imagelistsは更新しておく必要があります。
 		 */
 		show: function(){
 			this.show_images();
-			var offset = this.view.start - this.imagelist.point.start;
+			var offset = this.view.start - this.imagelists[0].point.start;
 			this.slide_with_offset(offset);
 		},
 
 		//画像の描写を更新する
 		update: function(){
 
-			var update_point = this.imagelist.get_update_point();
+			var update_point = this.imagelists[0].get_update_point();
 
 			/*
 			  条件に合致したらimagelistを書き換えます。
@@ -359,9 +383,10 @@ ImageList.prototype = {
 				//条件に当てはまらない場合は何もしません。
 				return;
 			}
-			
-			for(var i = 0; i < (IMAGE_NUMBER - 1) / 2; i++ ){
-				this.imagelist.update(left_or_right);
+			for(var j = 0; j < this.imagelists.length; j++){
+				for(var i = 0; i < (IMAGE_NUMBER - 1) / 2; i++ ){
+					this.imagelists[j].update(left_or_right);
+				}
 			}
 			this.show();
 		},
@@ -461,7 +486,7 @@ window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
 	//start layer nameを指定
-	_genome = new genome(1501, 100, "sample");
+	_genome = new genome(1501, 100, ["sample", "sample"]);
 	//_genome = new genome(3001, 1000, "sample");
 
 };

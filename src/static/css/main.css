@@ -13,7 +13,7 @@
  position: relative;
 }
 
-img {
+#show_images img {
  float: left;
  width: 800px;
  height: 400px;
@@ -21,4 +21,7 @@ img {
  position: relative;
  top: 0px;
  left: 0px;
+}
+#show_images div{
+ clear:left;
 }
