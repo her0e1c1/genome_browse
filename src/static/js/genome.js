@@ -24,6 +24,21 @@ var IMAGE_NUMBER = 5;
 
 var PATH = {images: "/static/images/"};
 
+function _DEBUG(){
+	var txt = "";
+	left = $("#show_images").position().left;
+	txt += "; left:" + left;
+	txt += "; view.start:" + _genome.get_view().start;
+	txt += "; view.stop:" + _genome.get_view().stop;
+	txt += "; update_point.start:" + _genome.get_imagelist().get_update_point().start;
+	txt += "; update_point.stop:" + _genome.get_imagelist().get_update_point().stop;
+	txt += "; point.start:" + _genome.get_imagelist().point.start;
+	txt += "; point.stop:" + _genome.get_imagelist().point.stop;
+
+	$("#debug").text(txt);
+}
+
+
 //private class
 Image = function(start, layer, name){
 	//private 変数
@@ -55,6 +70,7 @@ Image = function(start, layer, name){
 
   startの値が小さい方が、配列の先頭側にきます。
  */
+
 ImageList = function(){
 	this.init.apply(this, arguments);
 };
@@ -138,32 +154,18 @@ ImageList.prototype = {
 		size = (IMAGE_NUMBER - 1) / 2;
 			st = start - layer * size;
 		sp = stop + layer * size;
-		
+
 		//エラー処理が必要
 		//if(st < 1){};
 			//if(sp > max);
-		
+
 		var point = {
 			start: st,
 				stop: sp
 		};
 		return point;
 	},
-}
-
-function _DEBUG(){
-	var txt = "";
-	left = $("#show_images").position().left;
-	txt += "; left:" + left;
-	txt += "; view.start:" + _genome.get_view().start;
-	txt += "; view.stop:" + _genome.get_view().stop;
-	txt += "; update_point.start:" + _genome.get_imagelist().get_update_point().start;
-	txt += "; update_point.stop:" + _genome.get_imagelist().get_update_point().stop;
-	txt += "; point.start:" + _genome.get_imagelist().point.start;
-	txt += "; point.stop:" + _genome.get_imagelist().point.stop;
-
-	$("#debug").text(txt);
-}
+};
 
 
 /*
@@ -171,15 +173,12 @@ function _DEBUG(){
  クライアントの仕事
  staticにある画像を表示します。
 
- クロージャによるクラスやメソッドは、
- 他の変数に依存しないようにします。
  */
 (function(window){
 
 	var genome = function(){
 		this.init.apply(this, arguments);
 	};
-
 
 	//public methods
 	genome.prototype = {
@@ -193,18 +192,18 @@ function _DEBUG(){
 			};
 			this.layer = layer;
 			this.name = name;
-			
+
 			//ImageListクラスを扱うstaticな変数にする?
-			this.imagelist;
+			//this.imagelist;
 
 			//イベントでメソッドを呼ぶのに必要
 			var self = this;
 
 			//select表示
-			_set_init_option();
+			_set_init_option(layer);
 
 			//imgの枚数を設定
-			_set_init_img();
+			_set_init_img(IMAGE_NUMBER);
 
 			//event登録
 			$("#controller_button_left").click(function(){
@@ -218,19 +217,12 @@ function _DEBUG(){
 				self._update_click_select(this);
 			});
 
-			//画像取得
-			var _start = this.get_image_start(start, layer);
-			this.imagelist = new ImageList(_start, layer, name);
-			this.show_images();
-
-			//startの位置に画像をずらします。
-			var offset;
-			offset = start - this.imagelist.point.start;
-			this.slide_with_offset(offset);
+			//一回目の画像の表示
+			this.first_show(start, layer, name);
 		},
 
 		//private変数にアクセスするメソッド
-		//viewの終わりは、view.startとlayerから算出します。
+		//getメソッド
 		get_view : function(){
 			this.view.stop = this.get_view_stop(this.view.start);
 			return this.view;
@@ -242,16 +234,6 @@ function _DEBUG(){
 			return this.imagelist;
 		},
 
-		/*
-		  imgaelistのデータを全て表示します。
-		 */
-		show_images: function(){
-			var n = $("#show_images");
-			for(var i = 0; i < IMAGE_NUMBER; i++){
-				var child = n.children("[value=" + i  + "]");
-				child.attr("src", this.imagelist.images[i].src);
-			}
-		},
 		/*
 		  画像の幅とDNAの配列の幅は異なります。
 		  スクロールなどの処理をしても、ずれないようにします。
@@ -272,6 +254,9 @@ function _DEBUG(){
 			return (start - offset);
 		},
 
+		/*
+		  startとlayerからstopの値は算出します。
+		 */
 		get_view_stop :function(start, layer){
 			if(layer === undefined){
 				layer = this.layer;
@@ -290,6 +275,7 @@ function _DEBUG(){
 			//_view.start += offset;
 			n.css("left", left);
 		},
+
 		/*
 		  画像を取得する場合
 		  取得するパスは
@@ -325,6 +311,42 @@ function _DEBUG(){
 				this.imagelist.add(i);
 			}
 		},
+
+		first_show: function(start, layer, name){
+			/*
+			  残像が残る可能性があります。
+			  一度imgの属性hrefを削除します。
+			 */
+			$("#show_images img")
+				.hide()
+				.removeAttr("href");
+
+			/*
+			  画像の開始が1234のような中途半端な値の場合にも
+			  対応できるようにします。
+			*/
+			var _start = this.get_image_start(start, layer);
+			this.imagelist = new ImageList(_start, layer, name);
+			this.show_images();
+			//startの位置に画像をずらします。
+			var offset;
+			offset = start - this.imagelist.point.start;
+			this.slide_with_offset(offset);
+			
+			//再描画
+			$("#show_images img").show();
+		},
+		/*
+		  imgaelistのデータを全て表示します。
+		 */
+		show_images: function(){
+			var n = $("#show_images");
+			for(var i = 0; i < IMAGE_NUMBER; i++){
+				var child = n.children("[value=" + i  + "]");
+				child.attr("src", this.imagelist.images[i].src);
+			}
+		},
+
 		//画像の描写を更新するクラス
 		update: function(){
 
@@ -351,7 +373,7 @@ function _DEBUG(){
 			$("#show_images img").css("left", 0)
 			var offset = this.view.start - this.imagelist.point.start;
 			this.slide_with_offset(offset);
-			
+
 		},
 		/*
 		  left_or_right
@@ -374,8 +396,10 @@ function _DEBUG(){
 		*/
 		_update_click_select: function(event){
 			var value;
-			value = $(event).children(":selected").val();
-			this.init(this.view.start, value, this.name);
+			value = parseInt($(event).children(":selected").val());
+			//値の更新
+			this.layer = value;
+			this.first_show(this.view.start, value, this.name);
 		},
 	};
 
@@ -397,9 +421,9 @@ function _DEBUG(){
 	//init
 
 	//画像の張り合わせる枚数を予め作成する
-	function _set_init_img(){
+	function _set_init_img(number){
 
-		for(var i = 0; i < IMAGE_NUMBER; i++){
+		for(var i = 0; i < number; i++){
 			var n = $("#show_images").append("<img />");
 			n = n.children(":last");
 			n.attr("value", i)
@@ -407,7 +431,7 @@ function _DEBUG(){
 	};
 
 	//selectの初期設定をする
-	function _set_init_option(){
+	function _set_init_option(layer){
 
 		var layers = [
 			100,
@@ -431,6 +455,8 @@ function _DEBUG(){
 			//to do 表示の仕方を変更する1000 => 1k
 			n.text("show " + layers[i] + "p");
 		}
+		//layerの初期値を選択させておきます。
+		$("#controller_select").val(layer);
 	}
 
 	//グローバル空間に登録する
@@ -444,5 +470,5 @@ window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
 	//start layer nameを指定
-	_genome = new genome(1521, 100, "sample");
-}
+	_genome = new genome(3001, 1000, "sample");
+};
