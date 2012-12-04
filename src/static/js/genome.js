@@ -606,7 +606,7 @@ window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
 	//start layer nameを指定
-	_genome = new genome(1501, 100, ["sample"]);
+	_genome = new genome(1501, 100, ["sample", "sample"]);
 };
 
 
