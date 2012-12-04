@@ -2,6 +2,14 @@
  margin:0px;
  padding:0px;
 }
+body{
+	
+}
+#wrap{
+	width:1000px;
+	margin-left:auto;margin-right:auto;
+	
+}
 #wrap_show_images{
  border:5px solid black;
  width:800px;

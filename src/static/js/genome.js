@@ -25,10 +25,17 @@ var IMAGE_NUMBER = 5;
 
 var PATH = {images: "/static/images/"};
 
+function _D(str){
+	var d = $("#debug")
+		.append("<p/>")
+		.children(":last")
+		.html(str);
+	
+}
 function _DEBUG(){
+
 	var txt = "";
 	left = $("#show_images").position().left;
-	txt += "left:" + left;
 	txt += "; view.start:" + _genome.get_view().start;
 	txt += "; view.stop:" + _genome.get_view().stop;
 	txt += ";<br /> update_point.start:" + _genome.get_imagelist().get_update_point().start;
@@ -182,6 +189,8 @@ ImageList.prototype = {
  クライアントの仕事
  staticにある画像を表示します。
 
+todo:viewの書き換えるタイミングをあわせる
+
  */
 (function(window){
 
@@ -229,8 +238,7 @@ ImageList.prototype = {
 				return self._enter_input_view_start(this, event);
 			});
 
-			//スクロールイベント
-			//$("#");
+			this._scroll_show_images();
 
 			//一回目の画像の表示
 			this.first_show(start, layer, name);
@@ -256,10 +264,13 @@ ImageList.prototype = {
 		get_width_per_dna: function(){
 			return IMAGE_WIDTH / this.layer ;
 		},
+
 		/*
 		  画像の名前はGBrowseで生成するときに、
 		  予め決まっていますので、任意の値のstartを
 		  変換して、サーバー上にある画像の名前のに一致させます。
+		  (1234,100)の場合は1201を返します。
+		  ここでのoffsetは33です。
 		 */
 		get_image_start: function(start, layer){
 			if(layer === undefined){
@@ -281,6 +292,9 @@ ImageList.prototype = {
 
 		/*
 		  表示している画像をoffsetの差だけずらします。
+		  offsetはpoint.startとの差になっています。
+
+		 todo: viewはここで書き換えます。
 		 */
 		slide_with_offset: function(offset){
 			var n, left;
@@ -290,6 +304,9 @@ ImageList.prototype = {
 			left = _px2int(n.eq(0).css("left"));
 			left -= offset * this.get_width_per_dna();
 			n.css("left", left);
+		},
+		get_current_offset: function(){
+			return this.view.start - this.imagelists[0].point.start;
 		},
 
 		/*
@@ -363,14 +380,18 @@ ImageList.prototype = {
 		 */
 		show: function(){
 			this.show_images();
-			var offset = this.view.start - this.imagelists[0].point.start;
+			var offset = this.get_current_offset();
 			this.slide_with_offset(offset);
 			this.show_info();
 		},
 		show_info: function(){
 			$("#input_view_start").val(this.view.start);
 		},
-		//画像の描写を更新する
+
+		/*
+		  update_pointに達していた場合
+		  画像の描写を更新します。
+		 */
 		update: function(){
 
 			var update_point = this.imagelists[0].get_update_point();
@@ -412,6 +433,8 @@ ImageList.prototype = {
 		  -1の場合　左へ更新
 		  +1の場合　右へ更新
 		  スクロールの大きさはlayerの半分
+
+		  _scroll_show_imagesと機能がかぶっているのでまとめる
 		*/
 		_update_click_button: function (self, left_or_right){
 			var n, left;
@@ -423,6 +446,7 @@ ImageList.prototype = {
 			n.css("left", left)
 			this.update()
 		},
+
 		/*
 		  現在のstartとnameのままでlayerだけ変更します。
 		  中央を表示するために
@@ -458,7 +482,58 @@ ImageList.prototype = {
 				}
 			}
 		},
+		/*
+		  スクロールは他のイベントよりも複雑なのでこちらで計算させます。
+		 */
+		_scroll_show_images: function(){
+
+			var self = this;
+			/*
+			  flagがtreuのときがドラッグイベント中です。
+			 */
+			var flag = false;
+
+			//上下に動く必要はありませんのでxのみです。
+			var start_x;
+
+			$("#show_images").mousedown(function(event){
+				//初期化
+				flag = true;
+				start_x = event.clientX;
+				return false;
+			});
+
+			$("#show_images").mousemove(function(event){
+				var offset_x;
+				//スクロールに対して、移動の微調整をする変数です。
+				var WIGHT = 0.1;
+
+				if(flag){
+					offset_x = WIGHT * (event.clientX - start_x);
+					//start_x = event.clientX;
+					var co = self.get_current_offset();
+					self.slide_with_offset(co - offset_x);
+					self.view.start -= offset_x;
+					start_x = event.clientX;
+					self.update();
+					console.log("on");
+				}
+				return false;
+
+			});
+
+			$("#show_images")
+				.mouseup(function(){
+					flag = false;
+					self.update();
+				})
+				.mouseout(function(){
+					//flag = false;
+					self.update();
+				});
+		}
 	};
+
 
 	//private methods for utility
 
@@ -475,8 +550,8 @@ ImageList.prototype = {
 		return parseInt(str.replace("px" ,""))
 	};
 
-	//init
 
+	//init
 
 	//selectの初期設定をする
 	function _set_init_option(layer){
@@ -518,5 +593,5 @@ window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	//モジュールを呼び出す
 	//start layer nameを指定
-	_genome = new genome(1501, 100, ["sample", "sample"]);
+	_genome = new genome(1501, 100, ["sample"]);
 };
