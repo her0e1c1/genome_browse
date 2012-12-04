@@ -199,6 +199,7 @@ ImageList.prototype = {
 
 			//public変数
 			this.view;
+			/* 偶数条件付きです。 */
 			this.layer;
 			this.name;
 			this.imagelists;
@@ -424,11 +425,24 @@ ImageList.prototype = {
 		},
 		/*
 		  現在のstartとnameのままでlayerだけ変更します。
+		  中央を表示するために
+		  スタートの位置をview.startとview.stopの真ん中にします。
+
+		  1501 ~ 1600のとき、1000に縮小する場合
+		  1551が中央値になります。
+		  よって
+		  1051 ~ 2050までを表示します。
+
+		  拡大する場合は上記を下からたどっていきます。
+		  結局同じになります。
 		*/
 		_update_click_select: function(self){
-			var value;
-			value = parseInt($(self).children(":selected").val());
-			this.first_show(this.view.start, value, this.name);
+			var new_layer, mediam, start;
+			new_layer = parseInt($(self).children(":selected").val());
+			//計算を簡略化するために、layerは偶数という条件がつきます。
+			mediam = this.view.start + (this.layer / 2);
+			start = mediam - (new_layer / 2);
+			this.first_show(start, new_layer, this.name);
 		},
 
 		_enter_input_view_start: function(self,event){
