@@ -212,10 +212,6 @@ ImageList.prototype = {
 			//select表示
 			_set_init_option(layer);
 
-			//imgの枚数を設定
-			//ここで決めることができません。
-			//_set_init_img(IMAGE_NUMBER);
-
 			//event登録
 			$("#controller_button_left").click(function(){
 				self._update_click_button(this, -1)
@@ -231,6 +227,9 @@ ImageList.prototype = {
 			$("#input_view_start").keydown(function(event){
 				return self._enter_input_view_start(this, event);
 			});
+
+			//スクロールイベント
+			//$("#");
 
 			//一回目の画像の表示
 			this.first_show(start, layer, name);
@@ -464,15 +463,6 @@ ImageList.prototype = {
 
 	//init
 
-	//画像の張り合わせる枚数を予め作成する
-	function _set_init_img(number){
-
-		for(var i = 0; i < number; i++){
-			var n = $("#show_images").append("<img />");
-			n = n.children(":last");
-			n.attr("value", i)
-		}
-	};
 
 	//selectの初期設定をする
 	function _set_init_option(layer){
