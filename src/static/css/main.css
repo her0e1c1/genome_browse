@@ -33,3 +33,17 @@ body{
 #show_images div{
  clear:left;
 }
+
+#overview{
+	width: 800px;
+	height: 50px;
+	background-color: Scrollbar;
+	border:1px solid black;
+}
+
+#region{
+	width: 800px;
+	height: 50px;
+	background-color: InfoBackground;
+	border:1px solid black;
+}

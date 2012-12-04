@@ -25,6 +25,13 @@ var IMAGE_NUMBER = 5;
 
 var PATH = {images: "/static/images/"};
 
+
+//サーバーから必要なゲノム情報
+//配列の最長
+var MAX_LENGTH = 30000000;
+//取得するデータ名
+var TRACK_NAME = ["sample"];
+
 function _D(str){
 	var d = $("#debug")
 		.append("<p/>")
@@ -506,17 +513,18 @@ todo:viewの書き換えるタイミングをあわせる
 			$("#show_images").mousemove(function(event){
 				var offset_x;
 				//スクロールに対して、移動の微調整をする変数です。
-				var WIGHT = 0.1;
+				var WIGHT = 0.001;
 
 				if(flag){
 					offset_x = WIGHT * (event.clientX - start_x);
+					offset_x *= self.layer;
 					//start_x = event.clientX;
 					var co = self.get_current_offset();
 					self.slide_with_offset(co - offset_x);
 					self.view.start -= offset_x;
 					start_x = event.clientX;
 					self.update();
-					console.log("on");
+					console.log("offset " + offset_x);
 				}
 				return false;
 
@@ -528,6 +536,11 @@ todo:viewの書き換えるタイミングをあわせる
 					self.update();
 				})
 				.mouseout(function(){
+					/*
+					  firefoxの場合
+					  切り返しなどができなくなりますので、
+					  flagにfalseを設定しません。
+					*/
 					//flag = false;
 					self.update();
 				});
@@ -595,3 +608,48 @@ window.onload = function(){
 	//start layer nameを指定
 	_genome = new genome(1501, 100, ["sample"]);
 };
+
+//test code
+var flag = false;
+var start_x;
+$("#overview_box").mousedown(function(event){
+	//初期化
+	flag = true;
+	start_x = event.clientX;
+	return false;
+});
+
+$("#overview_box").mousemove(function(event){
+	var offset_x;
+	//スクロールに対して、移動の微調整をする変数です。
+	var WIGHT = 0.001;
+
+	if(flag){
+		offset_x = WIGHT * (event.clientX - start_x);
+		offset_x *= self.layer;
+		//start_x = event.clientX;
+		var co = self.get_current_offset();
+		self.slide_with_offset(co - offset_x);
+		self.view.start -= offset_x;
+		start_x = event.clientX;
+					self.update();
+		console.log("offset " + offset_x);
+	}
+	return false;
+
+});
+
+$("#overview_box")
+	.mouseup(function(){
+		flag = false;
+		self.update();
+	})
+	.mouseout(function(){
+		/*
+		  firefoxの場合
+		  切り返しなどができなくなりますので、
+		  flagにfalseを設定しません。
+		*/
+		//flag = false;
+		self.update();
+	});
