@@ -1,9 +1,10 @@
 *{
  margin:0px;
  padding:0px;
+ box-sizing: border-box;
 }
 body{
-	background-color: lightskyblue;
+	background-color: powderblue;
 }
 #main{
 	background-color: beige;
@@ -45,9 +46,27 @@ body{
 	border:1px solid black;
 }
 #overview_box{
+	width:inherit;
+	height:inherit;
 	overflow:hidden;
 }
-
+#overview_scale{
+	z-index:3;
+	width: inherit;
+	height:inherit;
+	float: left;
+}
+/*
+div.overview_scale{
+	float:left;
+	position:relative;
+	top:23px;
+	width:800px;
+	height:2px;
+	background-color:black;
+	
+}
+*/
 #region{
 	width: 800px;
 	height: 50px;
@@ -58,5 +77,6 @@ body{
 div.upperbox{
 	width: 100px;
 	height: 50px;
+	z-index:2;
 	background-color:pink;
 }

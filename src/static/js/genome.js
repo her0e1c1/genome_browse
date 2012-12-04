@@ -607,11 +607,20 @@ window.onload = function(){
 	//モジュールを呼び出す
 	//start layer nameを指定
 	_genome = new genome(1501, 100, ["sample", "sample"]);
+
+//test code
+
+var r = {
+		fillStyle: "#000",
+		x: 0, y: "5",
+		width: 80,
+		height: 10,
+		fromCenter: false
+	}
+	$("canvas").drawRect(r);
+
 };
 
-
-//var l = _genome.layer / 100;
-$("#overview_box").css("width", 10);
 
 //test code
 
