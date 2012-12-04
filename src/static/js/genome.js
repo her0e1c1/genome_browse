@@ -609,7 +609,15 @@ window.onload = function(){
 	_genome = new genome(1501, 100, ["sample"]);
 };
 
+
+//var l = _genome.layer / 100;
+$("#overview_box").css("width", 10);
+
 //test code
+
+/*
+over viewは0.1Mずつでよい
+*/
 var flag = false;
 var start_x;
 $("#overview_box").mousedown(function(event){

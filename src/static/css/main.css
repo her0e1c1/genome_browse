@@ -3,15 +3,20 @@
  padding:0px;
 }
 body{
-	
+	background-color: lightskyblue;
 }
-#wrap{
+#main{
+	background-color: beige;
 	width:1000px;
+	border: 1px solid black;
 	margin-left:auto;margin-right:auto;
-	
 }
+
+#main_center{
+	margin-left: 100px;
+}
+
 #wrap_show_images{
- border:5px solid black;
  width:800px;
  overflow:hidden;
 }
@@ -25,7 +30,6 @@ body{
  float: left;
  width: 800px;
  height: 400px;
- border: 1px solid red;
  position: relative;
  top: 0px;
  left: 0px;
@@ -37,8 +41,11 @@ body{
 #overview{
 	width: 800px;
 	height: 50px;
-	background-color: Scrollbar;
+	background-color: #E0E0E0;
 	border:1px solid black;
+}
+#overview_box{
+	overflow:hidden;
 }
 
 #region{
@@ -46,4 +53,10 @@ body{
 	height: 50px;
 	background-color: InfoBackground;
 	border:1px solid black;
+}
+
+div.upperbox{
+	width: 100px;
+	height: 50px;
+	background-color:pink;
 }
