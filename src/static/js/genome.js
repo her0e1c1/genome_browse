@@ -213,7 +213,6 @@ todo:viewの書き換えるタイミングをあわせる
 		  imagelistも配列です。ImageListのクラスの配列になります。
 		 */
 		init: function(start, layer, name){
-
 			//public変数
 			this.view;
 
@@ -235,21 +234,9 @@ todo:viewの書き換えるタイミングをあわせる
 			_set_init_option(layer);
 
 			//event登録
-			$("#controller_button_left").click(function(){
-				self._update_click_button(this, -1)
-			});
-			$("#controller_button_right").click(function(){
-				self._update_click_button(this, +1)
-			});
-
-			$("#controller_select").change(function(){
-				self._update_click_select(this);
-			});
-
-			$("#input_view_start").keydown(function(event){
-				return self._enter_input_view_start(this, event);
-			});
-
+			this._event_controler_select();
+			this._event_controler_button();
+			this._event_enter_input_view_start();
 			this._event_scroll_show_images();
 			this._event_overview();
 			this._event_region();
@@ -461,12 +448,13 @@ todo:viewの書き換えるタイミングをあわせる
 		  スクロールの大きさはlayerの半分
 
 		  _scroll_show_imagesと機能がかぶっているのでまとめる
+		  todo:sizeが1のときに一枚分移動するようにします。
 		*/
-		_update_click_button: function (self, left_or_right){
+		_update_click_button: function (left_or_right, size){
 			var n, left;
 			n = $("#show_images img");
 			left = _px2int(n.css("left"));
-			var scroll_size = (this.layer * left_or_right) / 5;
+			var scroll_size = (this.layer * left_or_right) * size;
 			left -= scroll_size * this.get_width_per_dna();
 			this.view.start += scroll_size;
 			n.css("left", left)
@@ -495,18 +483,68 @@ todo:viewの書き換えるタイミングをあわせる
 			this.first_show(start, new_layer, this.name);
 		},
 
-		_enter_input_view_start: function(self,event){
-			if(event.keyCode === 13){
-				var start = parseInt($(self).val());
-				if (start){
-					this.first_show(start, this.layer, this.name);
-					return false;
+		_event_controler_select: function(){
+			var node = $("#controller_select");
+			var self = this;
+
+			node.change(function(){
+				var new_layer;
+				new_layer = parseInt($(this).children(":selected").val());
+				//計算を簡略化するために、layerは偶数という条件がつきます。
+				var mediam = self.view.start + (self.layer / 2);
+				var start = mediam - (new_layer / 2);
+				self.first_show(start, new_layer, self.name);			
+				
+			});
+
+		},
+
+		/*
+		  画像を移動する4つのボタン(<< < > >>)の制御をします。
+		  
+		  bug: 連打すると更新についていけてないようです。
+		 */
+		_event_controler_button: function(){
+			var self = this;
+			var left = $("#controller_button_left");
+			var dleft = $("#controller_button_double_left");
+			var right = $("#controller_button_right");
+			var dright = $("#controller_button_double_right");
+
+			left.click(function(){
+				self._update_click_button(-1, 1/5);
+			});
+			dleft.click(function(){
+				self._update_click_button(-1, 1);
+			});
+
+			right.click(function(){
+				self._update_click_button(+1, 1/5);
+			});
+			dright.click(function(){
+				self._update_click_button(+1, 1);
+			});
+		},
+
+		/*
+		  入力された値のところから始まるよう描写します。
+		 */
+		_event_enter_input_view_start: function(){
+			var self = this;
+			var node = $("#input_view_start");
+			node.keydown(function(event){
+				if(event.keyCode === 13){
+					var start = parseInt($(this).val());
+					if (start){
+						self.first_show(start, self.layer, self.name);
+						return false;
+					}
+					else{
+						alert("不適切な入力です。");
+						return false;
+					}
 				}
-				else{
-					alert("不適切な入力です。");
-					return false;
-				}
-			}
+			});
 		},
 
 		/*
@@ -596,8 +634,9 @@ todo:viewの書き換えるタイミングをあわせる
 			  画像の幅からDNA配列へのサイズ変換です。
 			 */
 			function get_changedsize(value){
-				//画像の一部だけなので重み付けしています。
+				//開発中は画像の一部だけなので重み付けしています。
 				return (MAX_LENGTH * value * 0.0001) / IMAGE_WIDTH;
+				//return (MAX_LENGTH * value ) / IMAGE_WIDTH;
 			}
 
 			/*
@@ -629,13 +668,7 @@ todo:viewの書き換えるタイミングをあわせる
 			/*
 			  ドラッグイベント
 			  ドラッグした大きさに合わせて画像を描写します。
-
 			  クリックイベントと排他的にならないといけません。
-			  クリックした場合
-
-			  イベントの順番
-			  down => up => click
-
 			*/
 
 			node.mousedown(function(event){
@@ -650,6 +683,8 @@ todo:viewの書き換えるタイミングをあわせる
 			node.mousemove(function(event){
 				if(flag){
 					var offset_x = (event.offsetX - start_x);
+
+					//todo: 二色の長方形を描写するようにします。
 					var r = {
 						fillStyle: "pink",
 						x: start_x, y:0,
