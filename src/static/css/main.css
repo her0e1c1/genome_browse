@@ -63,26 +63,9 @@ canvas.box{
 	position:relative;
 	opacity:0.5;
 }
-/*
-div.overview_scale{
-	float:left;
-	position:relative;
-	top:23px;
-	width:800px;
-	height:2px;
-	background-color:black;
-	
-}
-*/
 #region{
 	width: 800px;
 	height: 50px;
 	background-color: InfoBackground;
 	border:1px solid black;
-}
-
-div.upperbox{
-	width: 100px;
-	height: 50px;
-	background-color:pink;
 }

@@ -28,7 +28,7 @@ var PATH = {images: "/static/images/"};
 
 //サーバーから必要なゲノム情報
 //配列の最長 本来は割り切れるような数ではありません。
-var MAX_LENGTH = 30000000; //30M 
+var MAX_LENGTH = 30000000; //30M
 
 //取得するデータ名
 var TRACK_NAME = ["sample"];
@@ -224,14 +224,27 @@ todo:viewの書き換えるタイミングをあわせる
 			// スクロールに対して、移動の微調整をする変数です。
 			this.SCROLL_WIGHT = 0.001;
 
+			//select>optionの値
+			this.LAYER_VALUES =  [
+				100,
+				200,
+				1000, //1k
+				2000,
+				5000,
+				10000, //10k
+				20000,
+				50000,
+				100000, //100k
+				200000,
+				500000,
+				1000000, //1M
+			];
+
 			//layerの最小値です。
-			this.MIN_LAYER = 100;
+			this.MIN_LAYER = this.LAYER_VALUES[0];
 
-			//イベントでメソッドを呼ぶのに必要
-			var self = this;
-
-			//select表示
-			_set_init_option(layer);
+			//htmlの初期化
+			this._init_set_options();
 
 			//event登録
 			this._event_controler_select();
@@ -291,6 +304,16 @@ todo:viewの書き換えるタイミングをあわせる
 			return start + layer - 1;
 		},
 
+		//layerの値と一致した番号を返します。
+		get_index_of_layer: function(){
+			for(var i = 0; i < this.LAYER_VALUES.length; i++){
+				if(this.layer === this.LAYER_VALUES[i]){
+					return i;
+				}
+			}
+			alert("layerが不適切な値です。")
+		},
+		
 		/*
 		  表示している画像をoffsetの差だけずらします。
 		  offsetはpoint.startとの差になっています。
@@ -461,6 +484,8 @@ todo:viewの書き換えるタイミングをあわせる
 			this.update()
 		},
 
+		
+
 		/*
 		  現在のstartとnameのままでlayerだけ変更します。
 		  中央を表示するために
@@ -471,18 +496,9 @@ todo:viewの書き換えるタイミングをあわせる
 		  よって
 		  1051 ~ 2050までを表示します。
 
-		  拡大する場合は上記を下からたどっていきます。
-		  結局同じになります。
+		  拡大する場合は上記を下から辿っていきますが、
+		  結局同じアルゴリズムになります。
 		*/
-		_update_click_select: function(self){
-			var new_layer, mediam, start;
-			new_layer = parseInt($(self).children(":selected").val());
-			//計算を簡略化するために、layerは偶数という条件がつきます。
-			mediam = this.view.start + (this.layer / 2);
-			start = mediam - (new_layer / 2);
-			this.first_show(start, new_layer, this.name);
-		},
-
 		_event_controler_select: function(){
 			var node = $("#controller_select");
 			var self = this;
@@ -493,15 +509,15 @@ todo:viewの書き換えるタイミングをあわせる
 				//計算を簡略化するために、layerは偶数という条件がつきます。
 				var mediam = self.view.start + (self.layer / 2);
 				var start = mediam - (new_layer / 2);
-				self.first_show(start, new_layer, self.name);			
-				
+				self.first_show(start, new_layer, self.name);
+
 			});
 
 		},
 
 		/*
-		  画像を移動する4つのボタン(<< < > >>)の制御をします。
-		  
+		  画像を移動する6つのボタン(<< < - +  > >>)の制御をします。
+
 		  bug: 連打すると更新についていけてないようです。
 		 */
 		_event_controler_button: function(){
@@ -510,6 +526,8 @@ todo:viewの書き換えるタイミングをあわせる
 			var dleft = $("#controller_button_double_left");
 			var right = $("#controller_button_right");
 			var dright = $("#controller_button_double_right");
+			var plus = $("#controller_button_plus");
+			var minus = $("#controller_button_minus");
 
 			left.click(function(){
 				self._update_click_button(-1, 1/5);
@@ -524,6 +542,24 @@ todo:viewの書き換えるタイミングをあわせる
 			dright.click(function(){
 				self._update_click_button(+1, 1);
 			});
+
+			plus.click(function(){
+				var index = self.get_index_of_layer();
+				index++;
+				if(self.LAYER_VALUES.length > index){
+					var new_layer = self.LAYER_VALUES[index];
+					self.first_show(self.view.start, new_layer, self.name);
+				}
+			});
+			minus.click(function(){
+				var index = self.get_index_of_layer();
+				index--;
+				if(0 <= index){
+					var new_layer = self.LAYER_VALUES[index];
+					self.first_show(self.view.start, new_layer, self.name);
+				}
+			});
+		
 		},
 
 		/*
@@ -556,7 +592,6 @@ todo:viewの書き換えるタイミングをあわせる
 		  画面からoutした場合はイベントが続いているところが多少問題あります。
 		 */
 		_event_scroll_show_images: function(){
-
 			var self = this;
 
 			/* flagがtreuのときがドラッグイベント中です。 */
@@ -728,6 +763,19 @@ todo:viewの書き換えるタイミングをあわせる
 		_event_region: function(){
 
 		},
+
+		//init
+		_init_set_options: function(){
+			var layers = this.LAYER_VALUES;
+			for(var i = 0 ; i < layers.length; i++){
+				var n = $("#controller_select").append("<option />");
+				n = n.children(":last");
+				n.attr("value", layers[i]);
+				//to do 表示の仕方を変更する1000 => 1k
+				n.text("show " + layers[i] + "p");
+			}
+		},
+
 	};
 
 
@@ -746,36 +794,6 @@ todo:viewの書き換えるタイミングをあわせる
 		return parseInt(str.replace("px" ,""))
 	};
 
-
-	//init
-
-	//selectの初期設定をします。
-	function _set_init_option(layer){
-
-		var layers = [
-			100,
-			200,
-			1000, //1k
-			2000,
-			5000,
-			10000, //10k
-			20000,
-			50000,
-			100000, //100k
-			200000,
-			500000,
-			1000000, //1M
-		];
-
-		for(var i = 0 ; i < layers.length; i++){
-			var n = $("#controller_select").append("<option />");
-			n = n.children(":last");
-			n.attr("value", layers[i]);
-			//to do 表示の仕方を変更する1000 => 1k
-			n.text("show " + layers[i] + "p");
-		}
-	}
-
 	//グローバル空間に登録する
 	window.genome = genome;
 
@@ -789,7 +807,7 @@ window.onload = function(){
 	//start layer nameを指定
 	_genome = new genome(1501, 100, ["sample", "sample"]);
 
-//test code
+	//test code
 
 	//overviewのメモリを描写します。
 
@@ -851,3 +869,4 @@ window.onload = function(){
 	}
 
 };
+
