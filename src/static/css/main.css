@@ -3,6 +3,12 @@
  padding:0px;
  box-sizing: border-box;
 }
+
+/*
+ todo:
+ 800pxなどと指定している箇所は、
+ 後ほど、jsで変更できるようにしておきます。
+ */
 body{
 	background-color: powderblue;
 }

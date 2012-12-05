@@ -37,7 +37,7 @@ function _D(str){
 		.append("<p/>")
 		.children(":last")
 		.html(str);
-	
+
 }
 function _DEBUG(){
 
@@ -215,13 +215,17 @@ todo:viewの書き換えるタイミングをあわせる
 
 			//public変数
 			this.view;
-			/* 偶数条件付きです。 */
+
+			/* layerは偶数条件付きです。 */
 			this.layer;
 			this.name;
 			this.imagelists;
 
-			//ImageListクラスを扱うstaticな変数にする?
-			//this.imagelist;
+			// スクロールに対して、移動の微調整をする変数です。
+			this.SCROLL_WIGHT = 0.001;
+
+			//layerの最小値です。
+			this.MIN_LAYER = 100;
 
 			//イベントでメソッドを呼ぶのに必要
 			var self = this;
@@ -245,7 +249,9 @@ todo:viewの書き換えるタイミングをあわせる
 				return self._enter_input_view_start(this, event);
 			});
 
-			this._scroll_show_images();
+			this._event_scroll_show_images();
+			this._event_overview();
+			this._event_region();
 
 			//一回目の画像の表示
 			this.first_show(start, layer, name);
@@ -334,11 +340,23 @@ todo:viewの書き換えるタイミングをあわせる
 			this.layer = layer;
 			this.name = name;
 			this.imagelists = new Array();
-
+			
+			//未設定の場合の初期値を設定します。
 			if(name.length === 0){
 				alert("何も選択されていません。");
 				return;
 			}
+
+			if(start === undefined){
+				start = 1;
+			}
+
+			if(layer === undefined){
+				this.layer = this.MIN_LAYER;
+			}
+			//layerの初期値を選択させておきます。
+			$("#controller_select").val(this.layer);
+
 			/*
 			  残像が残る可能性があります。
 			  一度imgの属性srcを削除します。
@@ -489,10 +507,16 @@ todo:viewの書き換えるタイミングをあわせる
 				}
 			}
 		},
+
 		/*
 		  スクロールは他のイベントよりも複雑なのでこちらで計算させます。
+		  (1)マウスのドラッグイベント発生
+		  (2)マウスのx座標の差をとりながら、画面を変化させる
+		  (3)ドラッグが終わったらイベント終了
+
+		  画面からoutした場合はイベントが続いているところが多少問題あります。
 		 */
-		_scroll_show_images: function(){
+		_event_scroll_show_images: function(){
 
 			var self = this;
 			/*
@@ -512,8 +536,7 @@ todo:viewの書き換えるタイミングをあわせる
 
 			$("#show_images").mousemove(function(event){
 				var offset_x;
-				//スクロールに対して、移動の微調整をする変数です。
-				var WIGHT = 0.001;
+				var WIGHT = self.SCROLL_WIGHT;
 
 				if(flag){
 					offset_x = WIGHT * (event.clientX - start_x);
@@ -544,7 +567,129 @@ todo:viewの書き換えるタイミングをあわせる
 					//flag = false;
 					self.update();
 				});
-		}
+		},
+
+		/*
+		  overviewのイベント
+		  クリックのみの場合
+		  その位置をスタートに変更する
+
+		  ドラッグの場合
+		  スタートの位置は常に左側から
+		  ドラッグの大きさと縮小拡大は対応させます。
+
+		  実際の計算式
+		  IMAGE_WIDTH : 30M = offsetX : view.start
+
+		 */
+		_event_overview: function(){
+
+			var self = this;
+			/*
+			  mousedownイベント開始
+			 */
+			var flag = false;
+
+			/*
+			  一度first_showしたら全てのイベントは
+			  一度とりやめます。
+			 */
+			var show = false;
+			var start_x;
+			var node = $("#overview_scale");
+
+			/*
+			  画像の幅からDNA配列へのサイズ変換です。
+			 */
+			function get_changedsize(value){
+				//画像の一部だけなので重み付けしています。
+				return (MAX_LENGTH * value * 0.0001) / IMAGE_WIDTH;
+			}
+
+			/*
+			  value以下の中で最大をとるものを返します。
+              当てはまるものがない場合は最後のzoom値を返します。
+			  最小値は100です。
+			*/
+			function get_value_near_zoom(value){
+				var MIN_LAYER = this.MIN_LAYER;
+				var option_values = new Array();
+				var children = $("#controller_select").children();
+
+				//各optionの値を取り出します。
+				for(var i = 0; i < children.length; i++){
+					var v = parseInt(children.eq(i).val());
+					option_values.push(v);
+				}
+				var prevalue = MIN_LAYER;
+				for(var i = 0; i < option_values.length; i++){
+					if(option_values[i] > value){
+						return prevalue;
+					}
+					prevalue = option_values[i];
+
+				}
+				return prevalue;
+			}
+			/*
+			  ドラッグイベント
+			  ドラッグした大きさに合わせて画像を描写します。
+
+			  クリックイベントと排他的にならないといけません。
+			  クリックした場合
+
+			  イベントの順番
+			  down => up => click 
+
+			*/
+
+			node.mousedown(function(event){
+				//イベントの初期化
+				//alert("d")
+				flag = true;
+				show = false; 
+				start_x = event.offsetX;
+				return false;
+			});
+
+			
+			//ドラッグ中、正方形を描写するだけです。
+			node.mousemove(function(event){
+
+			//	alert("m")
+			});
+
+			/*
+			  どこに移動するかの最終的な決定はこちらで行います。
+			  offsetが0の場合はクリックと見なします。
+			 */
+			node.mouseup(function(event){
+				var offset = event.offsetX - start_x;
+				if(offset === 0){
+					var start = get_changedsize(event.offsetX);
+					self.first_show(start, self.layer, self.name);
+				}
+				else{
+					var zoom = get_changedsize(offset);
+					var layer = get_value_near_zoom(zoom);
+					var min = Math.min(start_x, event.offsetX);
+					var start = get_changedsize(min);
+					self.first_show(start, layer, self.name);
+				}
+				
+				flag = false;
+			});
+
+		},
+
+		/*
+		  regionのイベント
+		  overviewと同じような動きです。
+		  ただし、表示するのはImageListのpointにします。
+		 */
+		_event_region: function(){
+
+		},
 	};
 
 
@@ -566,7 +711,7 @@ todo:viewの書き換えるタイミングをあわせる
 
 	//init
 
-	//selectの初期設定をする
+	//selectの初期設定をします。
 	function _set_init_option(layer){
 
 		var layers = [
@@ -591,8 +736,6 @@ todo:viewの書き換えるタイミングをあわせる
 			//to do 表示の仕方を変更する1000 => 1k
 			n.text("show " + layers[i] + "p");
 		}
-		//layerの初期値を選択させておきます。
-		$("#controller_select").val(layer);
 	}
 
 	//グローバル空間に登録する
@@ -612,6 +755,7 @@ window.onload = function(){
 
 	//overviewのメモリを描写します。
 
+	//MAX_LANGTHは計算しやすいようになっていますので、1Mなどの倍数に変換する必要あります。
 	$("#overview_scale").attr("width", IMAGE_WIDTH);
 	$("#overview_scale").attr("height", 50);
 
@@ -666,53 +810,3 @@ window.onload = function(){
 		ctx.drawText(text);
 	}
 };
-
-
-//test code
-
-/*
-over viewは0.1Mずつでよい
-*/
-var flag = false;
-var start_x;
-$("#overview_box").mousedown(function(event){
-	//初期化
-	flag = true;
-	start_x = event.clientX;
-	return false;
-});
-
-$("#overview_box").mousemove(function(event){
-	var offset_x;
-	//スクロールに対して、移動の微調整をする変数です。
-	var WIGHT = 0.001;
-
-	if(flag){
-		offset_x = WIGHT * (event.clientX - start_x);
-		offset_x *= self.layer;
-		//start_x = event.clientX;
-		var co = self.get_current_offset();
-		self.slide_with_offset(co - offset_x);
-		self.view.start -= offset_x;
-		start_x = event.clientX;
-					self.update();
-		console.log("offset " + offset_x);
-	}
-	return false;
-
-});
-
-$("#overview_box")
-	.mouseup(function(){
-		flag = false;
-		self.update();
-	})
-	.mouseout(function(){
-		/*
-		  firefoxの場合
-		  切り返しなどができなくなりますので、
-		  flagにfalseを設定しません。
-		*/
-		//flag = false;
-		self.update();
-	});
