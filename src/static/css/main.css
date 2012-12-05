@@ -51,9 +51,6 @@ body{
 	overflow:hidden;
 }
 #overview_scale{
-	z-index:3;
-	width: inherit;
-	height:inherit;
 	float: left;
 }
 /*
@@ -77,6 +74,5 @@ div.overview_scale{
 div.upperbox{
 	width: 100px;
 	height: 50px;
-	z-index:2;
 	background-color:pink;
 }

@@ -610,15 +610,61 @@ window.onload = function(){
 
 //test code
 
-var r = {
-		fillStyle: "#000",
-		x: 0, y: "5",
-		width: 80,
-		height: 10,
+	//overviewのメモリを描写します。
+
+	$("#overview_scale").attr("width", IMAGE_WIDTH);
+	$("#overview_scale").attr("height", 50);
+
+	var color = "#000";
+	var ctx = $("canvas");
+	var ONE_MEGA = 1000000;
+	var r = {
+		fillStyle: color,
+		x: 0, y: 24,
+		width: 800,
+		height: 2,
 		fromCenter: false
 	}
-	$("canvas").drawRect(r);
+	ctx.drawRect(r);
 
+	var vertical_line = {
+		fillStyle: color,
+		x: 0, y: 23,
+		width: 0.5,
+		height: 4,
+		fromCenter: false,
+	}
+
+	//0.1Mずつ縦線を描写します。
+	//解像度の関係で正確なメモリは刻めません。
+	var interval = (IMAGE_WIDTH * ONE_MEGA * 0.1) / MAX_LENGTH;
+	for(var x = 0; x <= IMAGE_WIDTH; x += interval){
+		vertical_line.x = x;
+		ctx.drawRect(vertical_line);
+	}
+
+	//1Mずつ太い線を描写します。
+	vertical_line.y -= 1;
+	vertical_line.height += 2;
+	vertical_line.width = 1;
+	interval = (IMAGE_WIDTH * ONE_MEGA) / MAX_LENGTH;
+	//同時にメモリの描写もします。
+	var num = 0;
+	var text = {
+		fillStyle: color,
+		strokeStyle: color,
+		strokeWidth:0.2,
+		x: 0, y: 20,
+		font: "9px Arial",
+		text: ""
+	}
+	for(var x = 0, i = 0; x <= IMAGE_WIDTH; x += interval, i++){
+		vertical_line.x = x;
+		ctx.drawRect(vertical_line);
+		text.text = i + "M";
+		text.x = i * interval;
+		ctx.drawText(text);
+	}
 };
 
 
