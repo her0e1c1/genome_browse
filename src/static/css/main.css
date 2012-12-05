@@ -59,6 +59,10 @@ body{
 #overview_scale{
 	float: left;
 }
+canvas.box{
+	position:relative;
+	opacity:0.5;
+}
 /*
 div.overview_scale{
 	float:left;

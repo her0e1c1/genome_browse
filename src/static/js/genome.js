@@ -27,8 +27,9 @@ var PATH = {images: "/static/images/"};
 
 
 //サーバーから必要なゲノム情報
-//配列の最長
-var MAX_LENGTH = 30000000;
+//配列の最長 本来は割り切れるような数ではありません。
+var MAX_LENGTH = 30000000; //30M 
+
 //取得するデータ名
 var TRACK_NAME = ["sample"];
 
@@ -340,7 +341,7 @@ todo:viewの書き換えるタイミングをあわせる
 			this.layer = layer;
 			this.name = name;
 			this.imagelists = new Array();
-			
+
 			//未設定の場合の初期値を設定します。
 			if(name.length === 0){
 				alert("何も選択されていません。");
@@ -519,9 +520,8 @@ todo:viewの書き換えるタイミングをあわせる
 		_event_scroll_show_images: function(){
 
 			var self = this;
-			/*
-			  flagがtreuのときがドラッグイベント中です。
-			 */
+
+			/* flagがtreuのときがドラッグイベント中です。 */
 			var flag = false;
 
 			//上下に動く必要はありませんのでxのみです。
@@ -589,14 +589,8 @@ todo:viewの書き換えるタイミングをあわせる
 			  mousedownイベント開始
 			 */
 			var flag = false;
-
-			/*
-			  一度first_showしたら全てのイベントは
-			  一度とりやめます。
-			 */
-			var show = false;
 			var start_x;
-			var node = $("#overview_scale");
+			var node = $("#overview").children(".box");
 
 			/*
 			  画像の幅からDNA配列へのサイズ変換です。
@@ -612,7 +606,7 @@ todo:viewの書き換えるタイミングをあわせる
 			  最小値は100です。
 			*/
 			function get_value_near_zoom(value){
-				var MIN_LAYER = this.MIN_LAYER;
+				var MIN_LAYER = self.MIN_LAYER;
 				var option_values = new Array();
 				var children = $("#controller_select").children();
 
@@ -631,6 +625,7 @@ todo:viewの書き換えるタイミングをあわせる
 				}
 				return prevalue;
 			}
+
 			/*
 			  ドラッグイベント
 			  ドラッグした大きさに合わせて画像を描写します。
@@ -639,24 +634,32 @@ todo:viewの書き換えるタイミングをあわせる
 			  クリックした場合
 
 			  イベントの順番
-			  down => up => click 
+			  down => up => click
 
 			*/
 
 			node.mousedown(function(event){
 				//イベントの初期化
-				//alert("d")
 				flag = true;
-				show = false; 
 				start_x = event.offsetX;
+				$(this).clearCanvas();
 				return false;
 			});
 
-			
 			//ドラッグ中、正方形を描写するだけです。
 			node.mousemove(function(event){
-
-			//	alert("m")
+				if(flag){
+					var offset_x = (event.offsetX - start_x);
+					var r = {
+						fillStyle: "pink",
+						x: start_x, y:0,
+						width: offset_x,
+						height:200,
+						fromCenter: false,
+					}
+					$(this).clearCanvas();
+					$(this).drawRect(r);
+				}
 			});
 
 			/*
@@ -676,7 +679,7 @@ todo:viewの書き換えるタイミングをあわせる
 					var start = get_changedsize(min);
 					self.first_show(start, layer, self.name);
 				}
-				
+				//$(this).clearCanvas();
 				flag = false;
 			});
 
@@ -758,9 +761,11 @@ window.onload = function(){
 	//MAX_LANGTHは計算しやすいようになっていますので、1Mなどの倍数に変換する必要あります。
 	$("#overview_scale").attr("width", IMAGE_WIDTH);
 	$("#overview_scale").attr("height", 50);
-
+	$("canvas").attr("width", IMAGE_WIDTH);
+	$("canvas").attr("height", 50);
+	$("canvas.box").css("top", "-50px")
 	var color = "#000";
-	var ctx = $("canvas");
+	var ctx = $("#overview_scale");
 	var ONE_MEGA = 1000000;
 	var r = {
 		fillStyle: color,
@@ -809,4 +814,5 @@ window.onload = function(){
 		text.x = i * interval;
 		ctx.drawText(text);
 	}
+
 };
