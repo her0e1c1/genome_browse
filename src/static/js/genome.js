@@ -383,8 +383,6 @@ todo:viewの書き換えるタイミングをあわせる
 			this.view.start += offset;
 			left -= offset * this.get_width_per_dna();
 			node.css("left", left);
-
-			//this.update();
 		},
 
 		/*
@@ -481,6 +479,7 @@ todo:viewの書き換えるタイミングをあわせる
 		/*
 		  update_pointに達していた場合
 		  画像の描写を更新します。
+		  条件に当てはった場合は更新します。
 		 */
 		update: function(){
 			var update_point = this.get_update_point();
@@ -494,7 +493,7 @@ todo:viewの書き換えるタイミングをあわせる
 			if(update_point.start > this.view.start){
 				left_or_right = +1;
 			}
-			else if(update_point.stop < this.view.stop){
+			else if(update_point.stop < this.get_view().stop){
 				left_or_right = -1;
 			}
 			else{
@@ -504,7 +503,8 @@ todo:viewの書き換えるタイミングをあわせる
 				  つまり、画像の書き換えはしませんが、
 				  表示するデータの変更はします。
 				*/
-				this.show_info();
+				//show_info()だけでよい
+				this.show();
 				return;
 			}
 			for(var j = 0; j < this.imagelists.length; j++){
