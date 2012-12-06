@@ -2,6 +2,25 @@
 var _genome;
 
 /*
+memo
+
+画像データ
+画像データをもつリスト
+リストを複数用意(tracks)
+
+更新する？
+リストの中身更新
+画像をずらすだけ
+
+描写する
+tracksを表示
+画像をずらす
+
+イベントハンドラ
+
+*/
+
+/*
 スクロールの注意
 右にスクロールする場合は
 ゲノムの配列の番号の小さい方を表示するので
@@ -272,6 +291,17 @@ todo:viewの書き換えるタイミングをあわせる
 		},
 
 		/*
+		  pointについては、配列の０番目にあわせます。
+		 */
+		get_point: function(){
+			return this.imagelists[0].point;
+		},
+
+		get_update_point: function(){
+			return this.imagelists[0].get_update_point();
+		},
+
+		/*
 		  画像の幅とDNAの配列の幅は異なります。
 		  スクロールなどの処理をしても、ずれないようにします。
 		*/
@@ -286,7 +316,7 @@ todo:viewの書き換えるタイミングをあわせる
 		  (1234,100)の場合は1201を返します。
 		  ここでのoffsetは33です。
 		 */
-		get_image_start: function(start, layer){
+		get_modifiedstart: function(start, layer){
 			if(layer === undefined){
 				layer = this.layer;
 			}
@@ -313,24 +343,48 @@ todo:viewの書き換えるタイミングをあわせる
 			}
 			alert("layerが不適切な値です。")
 		},
+
+		//viewとpointの差です。
+		get_current_offset: function(){
+			return this.view.start - this.imagelists[0].point.start;
+		},
 		
 		/*
 		  表示している画像をoffsetの差だけずらします。
-		  offsetはpoint.startとの差になっています。
+
+		  view.startが1001で、offsetが200の場合
+		  view.startは1201になります。
 
 		 todo: viewはここで書き換えます。
+
+		 modeのとる文字列
+		 undefined(point) => point.startからの差をとります。
+		 view => view.startからの差をとります。
 		 */
-		slide_with_offset: function(offset){
-			var n, left;
-			n = $("#show_images img");
-			//ずらす前に初期値０に設定します。
-			n.css("left", 0);
-			left = _px2int(n.eq(0).css("left"));
+		slide_with_offset: function(offset, mode){
+			var node = $("#show_images img");
+			var left;
+
+			if(mode === undefined ||
+			   mode === "point"){
+				//一度初期化します。
+				left = 0;
+				node.css("left", left);
+				this.view.start = this.get_point().start;
+			}
+			else if(mode === "view"){
+				left = _px2int(node.eq(0).css("left"));
+			}
+			else{
+				alert(mode +"は不適切な値です。");
+				return;
+			}
+
+			this.view.start += offset;
 			left -= offset * this.get_width_per_dna();
-			n.css("left", left);
-		},
-		get_current_offset: function(){
-			return this.view.start - this.imagelists[0].point.start;
+			node.css("left", left);
+
+			//this.update();
 		},
 
 		/*
@@ -378,7 +432,7 @@ todo:viewの書き換えるタイミングをあわせる
 			  画像の開始が1234のような中途半端な値の場合にも
 			  対応できるようにします。
 			*/
-			var _start = this.get_image_start(start, layer);
+			var _start = this.get_modifiedstart(start, layer);
 			for(var i = 0; i < name.length; i++){
 				this.imagelists.push(new ImageList(_start, layer, name[i]));
 			}
@@ -429,8 +483,7 @@ todo:viewの書き換えるタイミングをあわせる
 		  画像の描写を更新します。
 		 */
 		update: function(){
-
-			var update_point = this.imagelists[0].get_update_point();
+			var update_point = this.get_update_point();
 
 			/*
 			  条件に合致したらimagelistを書き換えます。
@@ -468,23 +521,13 @@ todo:viewの書き換えるタイミングをあわせる
 		  left_or_right
 		  -1の場合　左へ更新
 		  +1の場合　右へ更新
-		  スクロールの大きさはlayerの半分
-
-		  _scroll_show_imagesと機能がかぶっているのでまとめる
-		  todo:sizeが1のときに一枚分移動するようにします。
+		  sizeが1のとき一枚分移動します。
 		*/
 		_update_click_button: function (left_or_right, size){
-			var n, left;
-			n = $("#show_images img");
-			left = _px2int(n.css("left"));
 			var scroll_size = (this.layer * left_or_right) * size;
-			left -= scroll_size * this.get_width_per_dna();
-			this.view.start += scroll_size;
-			n.css("left", left)
-			this.update()
+			this.slide_with_offset(scroll_size, "view");
+			this.update();
 		},
-
-		
 
 		/*
 		  現在のstartとnameのままでlayerだけ変更します。
@@ -589,7 +632,7 @@ todo:viewの書き換えるタイミングをあわせる
 		  (2)マウスのx座標の差をとりながら、画面を変化させる
 		  (3)ドラッグが終わったらイベント終了
 
-		  画面からoutした場合はイベントが続いているところが多少問題あります。
+		  画面からoutした場合はイベントが続いているところに多少問題あります。
 		 */
 		_event_scroll_show_images: function(){
 			var self = this;
@@ -705,7 +748,6 @@ todo:viewの書き換えるタイミングをあわせる
 			  ドラッグした大きさに合わせて画像を描写します。
 			  クリックイベントと排他的にならないといけません。
 			*/
-
 			node.mousedown(function(event){
 				//イベントの初期化
 				flag = true;
@@ -784,9 +826,7 @@ todo:viewの書き換えるタイミングをあわせる
 	//サーバーからのデータ変換
 	function _string2json(data){
 		return eval("(" + data + ")");
-
 	};
-
 
 	//cssの値でpxの場合、とって数値にする
 	//"100px"(文字列) => 100(数値)
