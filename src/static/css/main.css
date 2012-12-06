@@ -35,9 +35,8 @@ body{
 
 #show_images img {
  float: left;
- width: 800px;
- height: 400px;
  position: relative;
+ /* 初期値 */
  top: 0px;
  left: 0px;
 }

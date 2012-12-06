@@ -18,6 +18,9 @@ tracksを表示
 
 イベントハンドラ
 
+
+スクロール
+再描画
 */
 
 /*
@@ -37,7 +40,7 @@ tracksを表示
  この値は変更できません。
 */
 var IMAGE_WIDTH = 800;
-var IMAGE_HEIGHT = 400;
+var IMAGE_HEIGHT = 100;
 
 //計算しやすい様に奇数
 var IMAGE_NUMBER = 5;
@@ -48,6 +51,7 @@ var PATH = {images: "/static/images/"};
 //サーバーから必要なゲノム情報
 //配列の最長 本来は割り切れるような数ではありません。
 var MAX_LENGTH = 30000000; //30M
+//var MAX_LENGTH = 3000; //30M
 
 //取得するデータ名
 var TRACK_NAME = ["sample"];
@@ -210,6 +214,44 @@ ImageList.prototype = {
 	},
 };
 
+Box = function(){
+	this.init.apply(this, arguments);
+};
+
+Box.prototype = {
+	/*
+	  x, widthに関しては、配列の始めとレイヤーです。
+	 */
+	init: function(node, rect){
+		this.node = node;
+		this.fillStyle = rect.fillStyle,
+		this.x = rect.x;
+		this.y = rect.y;
+		this.width = rect.width;
+		this.height = rect.height;
+	},
+	draw: function(){
+		this.node.drawRect(this._to_json());
+	},
+
+	clear: function(){
+		this.node.clearCanvas();
+	},
+	_to_json: function(){
+		var j = {
+			fillStyle: this.fillStyle,
+			x: this.x, y: this.y,
+			width: this.width,
+			height: this.height,
+			fromCenter: false
+		}
+		return j;
+	},
+	_get_changedsize: function(width){
+		return (MAX_LENGTH * width) / IMAGE_WIDTH;
+	},
+
+};
 
 /*
  genomeモジュールはjqueryに依存しています。
@@ -243,7 +285,7 @@ todo:viewの書き換えるタイミングをあわせる
 			// スクロールに対して、移動の微調整をする変数です。
 			this.SCROLL_WIGHT = 0.001;
 
-			//select>optionの値
+			//select>optionの値です。
 			this.LAYER_VALUES =  [
 				100,
 				200,
@@ -264,6 +306,21 @@ todo:viewの書き換えるタイミングをあわせる
 
 			//htmlの初期化
 			this._init_set_options();
+
+			//overview
+			this._init_set_overview();
+
+			//overview boxの描写です。
+			var rect = {
+				fillStyle: "pink",
+				x: start, y:0,
+				width: layer,
+				height:200,
+				fromCenter: false,
+			}
+			var node = $("#overview > canvas.box");
+			this.overview_box = new Box(node, rect);
+			this.overview_box.draw();
 
 			//event登録
 			this._event_controler_select();
@@ -292,7 +349,7 @@ todo:viewの書き換えるタイミングをあわせる
 			//計算を簡略化するために、layerは偶数という条件がつきます。
 			var mediam = old_start + (old_layer / 2);
 			var start = mediam - (new_layer / 2);
-			
+
 			return start;
 		},
 
@@ -361,7 +418,40 @@ todo:viewの書き換えるタイミングをあわせる
 		get_current_offset: function(){
 			return this.view.start - this.imagelists[0].point.start;
 		},
-		
+
+		/*
+		  画像の幅からDNA配列へのサイズ変換です。
+		*/
+		get_changedsize: function(width){
+			return (MAX_LENGTH * width) / IMAGE_WIDTH;
+		},
+
+		/*
+		  LAYERの値のうち、value以下の中で最大をとるものを返します。
+          当てはまるものがない場合は最後のzoom値を返します。
+		  最小値は100です。
+		*/
+		get_value_near_zoom: function(value){
+			var MIN_LAYER = this.MIN_LAYER;
+			var option_values = new Array();
+			var children = $("#controller_select").children();
+
+			//各optionの値を取り出します。
+			for(var i = 0; i < children.length; i++){
+				var v = parseInt(children.eq(i).val());
+				option_values.push(v);
+			}
+			var prevalue = MIN_LAYER;
+			for(var i = 0; i < option_values.length; i++){
+				if(option_values[i] > value){
+					return prevalue;
+				}
+				prevalue = option_values[i];
+
+			}
+			return prevalue;
+		},
+
 		/*
 		  表示している画像をoffsetの差だけずらします。
 
@@ -458,16 +548,21 @@ todo:viewの書き換えるタイミングをあわせる
 		 */
 		show_images: function(){
 			var n = $("#show_images");
+			var len = this.imagelists.length;
 			//子供の要素を一度中身をリセットします。
 			n.empty();
-			n.attr("height", IMAGE_HEIGHT);
-			for(var j = 0; j < this.imagelists.length; j++){
+			n.css("height", IMAGE_HEIGHT * len);
+			n.css("width", IMAGE_WIDTH * IMAGE_NUMBER);
+			for(var j = 0; j < len; j++){
 				n.append("<div></div>");
 				var child = n.children(":last");
 				for(var i = 0; i < IMAGE_NUMBER; i++){
 					child.append("<img />");
 					var grand_child = child.children(":last");
 					grand_child.attr("src", this.imagelists[j].images[i].src);
+					grand_child.css("height", IMAGE_HEIGHT);
+					grand_child.css("width", IMAGE_WIDTH);
+
 				}
 			}
 		},
@@ -499,6 +594,8 @@ todo:viewの書き換えるタイミングをあわせる
 		update: function(){
 			var update_point = this.get_update_point();
 
+			//htmlの描画
+			this._update_overview();
 			/*
 			  条件に合致したらimagelistを書き換えます。
 			  (IMAGE_NUMBER) - 1 / 2回
@@ -528,6 +625,11 @@ todo:viewの書き換えるタイミングをあわせる
 				}
 			}
 			this.show();
+		},
+
+		_update_overview: function(){
+			var node = $("#overview > canvas.box");
+
 		},
 
 		//eventハンドラー
@@ -626,7 +728,7 @@ todo:viewの書き換えるタイミングをあわせる
 					self.first_show(start, new_layer, self.name);
 				}
 			});
-		
+
 		},
 
 		/*
@@ -723,49 +825,13 @@ todo:viewの書き換えるタイミングをあわせる
 
 		 */
 		_event_overview: function(){
-
 			var self = this;
 			/*
 			  mousedownイベント開始
 			 */
 			var flag = false;
 			var start_x;
-			var node = $("#overview").children(".box");
-
-			/*
-			  画像の幅からDNA配列へのサイズ変換です。
-			 */
-			function get_changedsize(value){
-				//開発中は画像の一部だけなので重み付けしています。
-				return (MAX_LENGTH * value * 0.0001) / IMAGE_WIDTH;
-				//return (MAX_LENGTH * value ) / IMAGE_WIDTH;
-			}
-
-			/*
-			  value以下の中で最大をとるものを返します。
-              当てはまるものがない場合は最後のzoom値を返します。
-			  最小値は100です。
-			*/
-			function get_value_near_zoom(value){
-				var MIN_LAYER = self.MIN_LAYER;
-				var option_values = new Array();
-				var children = $("#controller_select").children();
-
-				//各optionの値を取り出します。
-				for(var i = 0; i < children.length; i++){
-					var v = parseInt(children.eq(i).val());
-					option_values.push(v);
-				}
-				var prevalue = MIN_LAYER;
-				for(var i = 0; i < option_values.length; i++){
-					if(option_values[i] > value){
-						return prevalue;
-					}
-					prevalue = option_values[i];
-
-				}
-				return prevalue;
-			}
+			var node = $("#overview > canvas.box");
 
 			/*
 			  ドラッグイベント
@@ -784,17 +850,11 @@ todo:viewの書き換えるタイミングをあわせる
 			node.mousemove(function(event){
 				if(flag){
 					var offset_x = (event.offsetX - start_x);
-
 					//todo: 二色の長方形を描写するようにします。
-					var r = {
-						fillStyle: "pink",
-						x: start_x, y:0,
-						width: offset_x,
-						height:200,
-						fromCenter: false,
-					}
-					$(this).clearCanvas();
-					$(this).drawRect(r);
+					self.overview_box.clear();
+					self.overview_box.x = start_x;
+					self.overview_box.width = offset_x;
+					self.overview_box.draw();
 				}
 			});
 
@@ -805,14 +865,14 @@ todo:viewの書き換えるタイミングをあわせる
 			node.mouseup(function(event){
 				var offset = event.offsetX - start_x;
 				if(offset === 0){
-					var start = get_changedsize(event.offsetX);
+					var start = self.get_changedsize(event.offsetX);
 					self.first_show(start, self.layer, self.name);
 				}
 				else{
-					var zoom = get_changedsize(offset);
-					var layer = get_value_near_zoom(zoom);
+					var zoom = self.get_changedsize(offset);
+					var layer = self.get_value_near_zoom(zoom);
 					var min = Math.min(start_x, event.offsetX);
-					var start = get_changedsize(min);
+					var start = self.get_changedsize(min);
 					self.first_show(start, layer, self.name);
 				}
 				//$(this).clearCanvas();
@@ -839,6 +899,68 @@ todo:viewの書き換えるタイミングをあわせる
 				n.attr("value", layers[i]);
 				//to do 表示の仕方を変更する1000 => 1k
 				n.text("show " + layers[i] + "p");
+			}
+		},
+
+		/*
+		  MAX_LANGTHは計算しやすいようになっていますので、
+		  1Mなどの倍数に変換する必要あります。
+		*/
+		_init_set_overview: function(){
+			$("#overview_scale").attr("width", IMAGE_WIDTH);
+			$("#overview_scale").attr("height", 50);
+			$("canvas").attr("width", IMAGE_WIDTH);
+			$("canvas").attr("height", 50);
+			$("canvas.box").css("top", "-50px")
+			var color = "#000";
+			var ctx = $("#overview_scale");
+			var ONE_MEGA = 1000000;
+			var r = {
+				fillStyle: color,
+				x: 0, y: 24,
+				width: 800,
+				height: 2,
+				fromCenter: false
+			}
+			ctx.drawRect(r);
+
+			var vertical_line = {
+				fillStyle: color,
+				x: 0, y: 23,
+				width: 0.5,
+				height: 4,
+				fromCenter: false,
+			}
+
+			//0.1Mずつ縦線を描写します。
+			//解像度の関係で正確なメモリは刻めません。
+			var interval = (IMAGE_WIDTH * ONE_MEGA * 0.1) / MAX_LENGTH;
+			for(var x = 0; x <= IMAGE_WIDTH; x += interval){
+				vertical_line.x = x;
+				ctx.drawRect(vertical_line);
+			}
+
+			//1Mずつ太い線を描写します。
+			vertical_line.y -= 1;
+			vertical_line.height += 2;
+			vertical_line.width = 1;
+			interval = (IMAGE_WIDTH * ONE_MEGA) / MAX_LENGTH;
+			//同時にメモリの描写もします。
+			var num = 0;
+			var text = {
+				fillStyle: color,
+				strokeStyle: color,
+				strokeWidth:0.2,
+				x: 0, y: 20,
+				font: "9px Arial",
+				text: ""
+			}
+			for(var x = 0, i = 0; x <= IMAGE_WIDTH; x += interval, i++){
+				vertical_line.x = x;
+				ctx.drawRect(vertical_line);
+				text.text = i + "M";
+				text.x = i * interval;
+				ctx.drawText(text);
 			}
 		},
 
@@ -871,66 +993,24 @@ window.onload = function(){
 	//start layer nameを指定
 	_genome = new genome(1501, 100, ["sample", "sample"]);
 
-	//test code
 
-	//overviewのメモリを描写します。
-
-	//MAX_LANGTHは計算しやすいようになっていますので、1Mなどの倍数に変換する必要あります。
-	$("#overview_scale").attr("width", IMAGE_WIDTH);
-	$("#overview_scale").attr("height", 50);
-	$("canvas").attr("width", IMAGE_WIDTH);
-	$("canvas").attr("height", 50);
-	$("canvas.box").css("top", "-50px")
-	var color = "#000";
-	var ctx = $("#overview_scale");
-	var ONE_MEGA = 1000000;
-	var r = {
-		fillStyle: color,
-		x: 0, y: 24,
-		width: 800,
-		height: 2,
-		fromCenter: false
-	}
-	ctx.drawRect(r);
-
-	var vertical_line = {
-		fillStyle: color,
-		x: 0, y: 23,
-		width: 0.5,
-		height: 4,
+	var rect = {
+		fillStyle: "pink",
+		x: 1000, y:0,
+		width: 10,
+		height:200,
 		fromCenter: false,
 	}
-
-	//0.1Mずつ縦線を描写します。
-	//解像度の関係で正確なメモリは刻めません。
-	var interval = (IMAGE_WIDTH * ONE_MEGA * 0.1) / MAX_LENGTH;
-	for(var x = 0; x <= IMAGE_WIDTH; x += interval){
-		vertical_line.x = x;
-		ctx.drawRect(vertical_line);
-	}
-
-	//1Mずつ太い線を描写します。
-	vertical_line.y -= 1;
-	vertical_line.height += 2;
-	vertical_line.width = 1;
-	interval = (IMAGE_WIDTH * ONE_MEGA) / MAX_LENGTH;
-	//同時にメモリの描写もします。
-	var num = 0;
-	var text = {
-		fillStyle: color,
-		strokeStyle: color,
-		strokeWidth:0.2,
-		x: 0, y: 20,
-		font: "9px Arial",
-		text: ""
-	}
-	for(var x = 0, i = 0; x <= IMAGE_WIDTH; x += interval, i++){
-		vertical_line.x = x;
-		ctx.drawRect(vertical_line);
-		text.text = i + "M";
-		text.x = i * interval;
-		ctx.drawText(text);
-	}
-
+	var node = $("#overview > canvas.box");
+	b = new Box(node, rect);
+	b.draw();
 };
+var b;
 
+function a(v){
+	while(ture){
+		var temp = v / 10
+		
+	}
+
+}
