@@ -283,6 +283,19 @@ todo:viewの書き換えるタイミングをあわせる
 			this.view.stop = this.get_view_stop(this.view.start);
 			return this.view;
 		},
+
+		/*
+		  倍率を変更する際に真ん中を表示する必要があります。
+		  その場合の新たな開始位置を取得します。
+		 */
+		get_start_after_zoom:function(old_start, old_layer, new_layer){
+			//計算を簡略化するために、layerは偶数という条件がつきます。
+			var mediam = old_start + (old_layer / 2);
+			var start = mediam - (new_layer / 2);
+			
+			return start;
+		},
+
 		get_layer: function(){
 			return this.layer;
 		},
@@ -395,14 +408,6 @@ todo:viewの書き換えるタイミングをあわせる
 		 */
 		first_show: function(start, layer, name){
 
-			var stop = this.get_view_stop(start);
-			this.view ={
-				start: start,
-				stop: stop,
-			};
-			this.layer = layer;
-			this.name = name;
-			this.imagelists = new Array();
 
 			//未設定の場合の初期値を設定します。
 			if(name.length === 0){
@@ -410,15 +415,25 @@ todo:viewの書き換えるタイミングをあわせる
 				return;
 			}
 
-			if(start === undefined){
+			if(start === undefined ||
+			   start <= 0 ){
 				start = 1;
 			}
+			var stop = this.get_view_stop(start);
 
 			if(layer === undefined){
 				this.layer = this.MIN_LAYER;
 			}
 			//layerの初期値を選択させておきます。
-			$("#controller_select").val(this.layer);
+			$("#controller_select").val(layer);
+
+			this.view ={
+				start: start,
+				stop: stop,
+			};
+			this.layer = layer;
+			this.name = name;
+			this.imagelists = new Array();
 
 			/*
 			  残像が残る可能性があります。
@@ -504,7 +519,7 @@ todo:viewの書き換えるタイミングをあわせる
 				  表示するデータの変更はします。
 				*/
 				//show_info()だけでよい
-				this.show();
+				this.show_info();
 				return;
 			}
 			for(var j = 0; j < this.imagelists.length; j++){
@@ -549,7 +564,6 @@ todo:viewの書き換えるタイミングをあわせる
 			node.change(function(){
 				var new_layer;
 				new_layer = parseInt($(this).children(":selected").val());
-				//計算を簡略化するために、layerは偶数という条件がつきます。
 				var mediam = self.view.start + (self.layer / 2);
 				var start = mediam - (new_layer / 2);
 				self.first_show(start, new_layer, self.name);
@@ -591,7 +605,12 @@ todo:viewの書き換えるタイミングをあわせる
 				index++;
 				if(self.LAYER_VALUES.length > index){
 					var new_layer = self.LAYER_VALUES[index];
-					self.first_show(self.view.start, new_layer, self.name);
+					var start = self.get_start_after_zoom(
+						self.view.start,
+						self.layer,
+						new_layer
+					);
+					self.first_show(start, new_layer, self.name);
 				}
 			});
 			minus.click(function(){
@@ -599,7 +618,12 @@ todo:viewの書き換えるタイミングをあわせる
 				index--;
 				if(0 <= index){
 					var new_layer = self.LAYER_VALUES[index];
-					self.first_show(self.view.start, new_layer, self.name);
+					var start = self.get_start_after_zoom(
+						self.view.start,
+						self.layer,
+						new_layer
+					);
+					self.first_show(start, new_layer, self.name);
 				}
 			});
 		
