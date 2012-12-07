@@ -1,3 +1,4 @@
+
 Utility = function(){
 	this.init.apply(this, arguments);
 };
@@ -9,7 +10,7 @@ Utility.prototype = {
 	get_digits: function (v){
 		//負の数は正にします。
 		if(v < 0) v *= -1;
-		
+
 		var i = 1;
 		while(true){
 		if(v < Math.pow(10, i))break;
@@ -59,7 +60,7 @@ Utility.prototype = {
 		var d = this.get_digits(v);
 		var first = this.get_digit_number(v ,d);
 		var second = this.get_digit_number(v ,d - 1);
-		
+
 		var cutted = translate(first, second, d);
 		if(cutted === v)
 			return v;
@@ -96,26 +97,42 @@ Utility.prototype = {
 		for(var i = 1; i <= 100; i++){
 			one.push(first * i);
 		}
-		
+
 		return json = {
 			ten : ten,
 			one : one,
 		};
 
-		//サーバーからのデータ変換をします。
-		string2json: function(data){
-			return eval("(" + data + ")");
-		};
+	},
 
-		/*
-		  cssの値でpxの場合、とって数値にします。
-		  "100px"(文字列) => 100(数値)
-		*/
-		px2int: function(str){
-			return parseInt(str.replace("px" ,""))
-		};
+	//サーバーからのデータ変換をします。
+	stringtojson: function(data){
+		return eval("(" + data + ")");
+	},
+
+	/*
+	  cssの値でpxの場合、とって数値にします。
+	  "100px"(文字列) => 100(数値)
+	*/
+	px2int: function(str){
+		return parseInt(str.replace("px" ,""))
 
 	},
+
+	make_src_path: function (start, layer, name){
+		var src;
+		start = start + ".png";
+		var src = this.join(this.join(GS.PATH.images, name), layer);
+		src = src + start;
+		console.log("image path: " + src);
+		return src;
+	},
+
+	//パスをつなげます。
+	join: function(root, path){
+		return root + path + "/";
+	},
+
 };
 
 u = new Utility(); //for debug

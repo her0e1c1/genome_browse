@@ -1,16 +1,11 @@
 //global settings
-var _genome;
-var UTIL = new Utility();
+var _Genome;
+var Utility = new Utility();
 
 /*
 スクロールの注意
 右にスクロールする場合は
-ゲノムの配列の番号の小さい方を表示するので
-逆に動く
-
-画像の名前は1001, 1101,1201のように決めてあるため、
-1222などをリクエストする場合は、
-1201に修正する必要があります。
+ゲノムの配列の番号の小さい方を表示するので逆に動きます。
 */
 
 /*
@@ -18,33 +13,45 @@ var UTIL = new Utility();
  画像の幅はGBrowseで生成していくときに決定しますので
  この値は変更できません。
 */
-var IMAGE_WIDTH = 800;
-var IMAGE_HEIGHT = 100;
 
-//計算しやすい様に奇数です。
-var IMAGE_NUMBER = 5;
+GlobalSettings = function(){
+	this.init.apply(this, arguments);
+};
 
-var PATH = {images: "/static/images/"};
+GlobalSettings.prototype = {
+	init: function(){
+		this.IMAGE_WIDTH = 800;
+		this.IMAGE_HEIGHT = 100;
 
+		//計算しやすい様に奇数です。
+		this.IMAGE_NUMBER = 5;
 
-//サーバーから必要なゲノム情報
-//配列の最長 本来は割り切れるような数ではありません。
-var MAX_LENGTH = 30000000; //30M
-//var MAX_LENGTH = 3000; //30M
+		this.PATH = {images: "/static/images/"};
 
-//取得するデータ名
-var TRACK_NAME = ["sample"];
+		//サーバーから必要なゲノム情報
+		this.MAX_LENGTH = 30000000; //30M
+		//this.MAX_LENGTH = 3000; //30M
+
+		//取得するデータ名
+		this.TRACK_NAME = ["sample"];
+
+		//css関連
+		this.OVERVIEW_HEIGHT = 50;
+	},
+};
+
+GS = new GlobalSettings();
 
 function _DEBUG(){
 
 	var txt = "";
 	left = $("#show_images").position().left;
-	txt += "; view.start:" + _genome.get_view().start;
-	txt += "; view.stop:" + _genome.get_view().stop;
-	txt += ";<br /> update_point.start:" + _genome.get_imagelist().get_update_point().start;
-	txt += "; update_point.stop:" + _genome.get_imagelist().get_update_point().stop;
-	txt += "; <br />point.start:" + _genome.get_imagelist().point.start;
-	txt += "; point.stop:" + _genome.get_imagelist().point.stop;
+	txt += "; view.start:" + _Genome.get_view().start;
+	txt += "; view.stop:" + _Genome.get_view().stop;
+	txt += ";<br /> update_point.start:" + _Genome.get_imagelist().get_update_point().start;
+	txt += "; update_point.stop:" + _Genome.get_imagelist().get_update_point().stop;
+	txt += "; <br />point.start:" + _Genome.get_imagelist().point.start;
+	txt += "; point.stop:" + _Genome.get_imagelist().point.stop;
 
 	$("#debug").html(txt);
 }
@@ -63,21 +70,8 @@ Image = function(start, layer, name){
 	  /static/images/name/layer/start.png
 	  のようになっています。
 	*/
-	this.src = _make_src_path(start, layer, name)
+	this.src = Utility.make_src_path(start, layer, name)
 	this.stop = start + layer - 1;
-
-	function _make_src_path(start, layer, name){
-		var src;
-		start = start + ".png";
-		var src = _join(_join(PATH.images, name), layer);
-		src = src + start;
-		console.log("image path: " + src);
-		return src;
-	}
-	//パスをつなげる
-	function _join(root, path){
-		return root + path + "/";
-	}
 };
 
 /*
@@ -99,10 +93,10 @@ ImageList.prototype = {
 		this.start = start;
 		this.layer = layer;
 		this.name = name;
-		this.images = new Array(IMAGE_NUMBER);
+		this.images = new Array(GS.IMAGE_NUMBER);
 		this.point = this._get_each_side_point(start, layer);
 		//画像データを生成する
-		for(var i = 0; i < IMAGE_NUMBER; i++){
+		for(var i = 0; i < GS.IMAGE_NUMBER; i++){
 			var i,st;
 			st = this.point.start + layer * i;
 			img = new Image(st, layer, name);
@@ -129,7 +123,7 @@ ImageList.prototype = {
 	get_update_point: function(){
 		var point = {
 			start: this.images[0].stop,
-			stop: this.images[IMAGE_NUMBER - 1].start,
+			stop: this.images[GS.IMAGE_NUMBER - 1].start,
 		}
 		return point;
 	},
@@ -170,7 +164,7 @@ ImageList.prototype = {
 		var st, sp, stop, size;
 		stop = start + layer - 1;
 		//奇数ということが前提です。
-		size = (IMAGE_NUMBER - 1) / 2;
+		size = (GS.IMAGE_NUMBER - 1) / 2;
 			st = start - layer * size;
 		sp = stop + layer * size;
 
@@ -220,7 +214,7 @@ Box.prototype = {
 		return j;
 	},
 	_get_changedsize: function(width){
-		return (MAX_LENGTH * width) / IMAGE_WIDTH;
+		return (GS.MAX_LENGTH * width) / GS.IMAGE_WIDTH;
 	},
 
 };
@@ -277,7 +271,7 @@ todo:viewの書き換えるタイミングをあわせる
 			this.MIN_LAYER = this.LAYER_VALUES[0];
 
 			//表示用に切りがいい数値に変換します。
-			this.ROUND_MAX_LENGTH = UTIL.roundout(MAX_LENGTH);
+			this.ROUND_MAX_LENGTH = Utility.roundout(GS.MAX_LENGTH);
 
 			//htmlの初期化
 			this._init_set_options();
@@ -351,7 +345,7 @@ todo:viewの書き換えるタイミングをあわせる
 		  スクロールなどの処理をしても、ずれないようにします。
 		*/
 		get_width_per_dna: function(){
-			return IMAGE_WIDTH / this.layer ;
+			return GS.IMAGE_WIDTH / this.layer ;
 		},
 
 		/*
@@ -398,7 +392,7 @@ todo:viewの書き換えるタイミングをあわせる
 		  画像の幅からDNA配列へのサイズ変換です。
 		*/
 		get_changedsize: function(width){
-			return (MAX_LENGTH * width) / IMAGE_WIDTH;
+			return (GS.MAX_LENGTH * width) / GS.IMAGE_WIDTH;
 		},
 
 		/*
@@ -451,7 +445,7 @@ todo:viewの書き換えるタイミングをあわせる
 				this.view.start = this.get_point().start;
 			}
 			else if(mode === "view"){
-				left = _px2int(node.eq(0).css("left"));
+				left = Utility.px2int(node.eq(0).css("left"));
 			}
 			else{
 				alert(mode +"は不適切な値です。");
@@ -526,17 +520,17 @@ todo:viewの書き換えるタイミングをあわせる
 			var len = this.imagelists.length;
 			//子供の要素を一度中身をリセットします。
 			n.empty();
-			n.css("height", IMAGE_HEIGHT * len);
-			n.css("width", IMAGE_WIDTH * IMAGE_NUMBER);
+			n.css("height", GS.IMAGE_HEIGHT * len);
+			n.css("width", GS.IMAGE_WIDTH * GS.IMAGE_NUMBER);
 			for(var j = 0; j < len; j++){
 				n.append("<div></div>");
 				var child = n.children(":last");
-				for(var i = 0; i < IMAGE_NUMBER; i++){
+				for(var i = 0; i < GS.IMAGE_NUMBER; i++){
 					child.append("<img />");
 					var grand_child = child.children(":last");
 					grand_child.attr("src", this.imagelists[j].images[i].src);
-					grand_child.css("height", IMAGE_HEIGHT);
-					grand_child.css("width", IMAGE_WIDTH);
+					grand_child.css("height", GS.IMAGE_HEIGHT);
+					grand_child.css("width", GS.IMAGE_WIDTH);
 
 				}
 			}
@@ -595,7 +589,7 @@ todo:viewの書き換えるタイミングをあわせる
 				return;
 			}
 			for(var j = 0; j < this.imagelists.length; j++){
-				for(var i = 0; i < (IMAGE_NUMBER - 1) / 2; i++ ){
+				for(var i = 0; i < (GS.IMAGE_NUMBER - 1) / 2; i++ ){
 					this.imagelists[j].update(left_or_right);
 				}
 			}
@@ -882,10 +876,10 @@ todo:viewの書き換えるタイミングをあわせる
 		  1Mなどの倍数に変換する必要あります。
 		*/
 		_init_set_overview: function(){
-			$("#overview_scale").attr("width", IMAGE_WIDTH);
-			$("#overview_scale").attr("height", 50);
-			$("canvas").attr("width", IMAGE_WIDTH);
-			$("canvas").attr("height", 50);
+			$("#overview_scale").attr("width", GS.IMAGE_WIDTH);
+			$("#overview_scale").attr("height", GS.OVERVIEW_HEIGHT);
+			$("canvas").attr("width", GS.IMAGE_WIDTH);
+			$("canvas").attr("height", GS.OVERVIEW_HEIGHT);
 			$("canvas.box").css("top", "-50px")
 			var color = "#000";
 			var ctx = $("#overview_scale");
@@ -909,8 +903,8 @@ todo:viewの書き換えるタイミングをあわせる
 
 			//0.1Mずつ縦線を描写します。
 			//解像度の関係で正確なメモリは刻めません。
-			var interval = (IMAGE_WIDTH * ONE_MEGA * 0.1) / MAX_LENGTH;
-			for(var x = 0; x <= IMAGE_WIDTH; x += interval){
+			var interval = (GS.IMAGE_WIDTH * ONE_MEGA * 0.1) / GS.MAX_LENGTH;
+			for(var x = 0; x <= GS.IMAGE_WIDTH; x += interval){
 				vertical_line.x = x;
 				ctx.drawRect(vertical_line);
 			}
@@ -919,7 +913,7 @@ todo:viewの書き換えるタイミングをあわせる
 			vertical_line.y -= 1;
 			vertical_line.height += 2;
 			vertical_line.width = 1;
-			interval = (IMAGE_WIDTH * ONE_MEGA) / MAX_LENGTH;
+			interval = (GS.IMAGE_WIDTH * ONE_MEGA) / GS.MAX_LENGTH;
 			//同時にメモリの描写もします。
 			var num = 0;
 			var text = {
@@ -930,7 +924,7 @@ todo:viewの書き換えるタイミングをあわせる
 				font: "9px Arial",
 				text: ""
 			}
-			for(var x = 0, i = 0; x <= IMAGE_WIDTH; x += interval, i++){
+			for(var x = 0, i = 0; x <= GS.IMAGE_WIDTH; x += interval, i++){
 				vertical_line.x = x;
 				ctx.drawRect(vertical_line);
 				text.text = i + "M";
@@ -941,13 +935,7 @@ todo:viewの書き換えるタイミングをあわせる
 
 	};
 
-	//cssの値でpxの場合、とって数値にする
-	//"100px"(文字列) => 100(数値)
-	function _px2int(str){
-		return parseInt(str.replace("px" ,""))
-	};
-
-	//グローバル空間に登録する
+	//グローバル空間に登録します。
 	window.genome = genome;
 
 }(window));
@@ -956,9 +944,9 @@ todo:viewの書き換えるタイミングをあわせる
 //init
 window.onload = function(){
 	setInterval(_DEBUG, 1000);
-	//モジュールを呼び出す
-	//start layer nameを指定
-	_genome = new genome(1501, 100, ["sample", "sample"]);
+
+	/* start layer nameを指定します。 */
+	_Genome = new genome(1501, 100, GS.TRACK_NAME);
 	
 	var rect = {
 		fillStyle: "pink",
