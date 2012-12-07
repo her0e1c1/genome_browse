@@ -73,14 +73,14 @@ GlobalSettings.prototype = {
 	  スクロールなどの処理をしても、ずれないようにします。
 	*/
 	get_width_per_dna: function(layer){
-		return GS.IMAGE_WIDTH / layer ;
+		return this.IMAGE_WIDTH / layer ;
 	},
 
 	/*
 	  切り上げたDNAの長さから画像の幅に変換します。
 	*/
 	change_rounddna2image: function(dna){
-		return (GS.IMAGE_WIDTH * dna) / GS.ROUND_MAX_LENGTH;
+		return (this.IMAGE_WIDTH * dna) / this.ROUND_MAX_LENGTH;
 	},
 
 	/*
@@ -126,7 +126,7 @@ GlobalSettings.prototype = {
 		return prevalue;
 	},
 
-	/* 1Mのように読みやすい数値に変換します。*/
+	/* 1000を1kのように読みやすい数値に変換します。*/
 	change_layervalue4show: function(){
 
 	},
@@ -284,13 +284,21 @@ Box.prototype = {
 	init: function(node, rect){
 		this.node = node;
 		this.fillStyle = rect.fillStyle,
-		this.x = rect.x;
+		this.x = GS.change_rounddna2image(rect.x);
 		this.y = rect.y;
-		this.width = rect.width;
+		this.width = GS.change_rounddna2image(rect.width);
 		this.height = rect.height;
 	},
 	draw: function(){
+		this.clear(); 
 		this.node.drawRect(this._to_json());
+	},
+	set_x :function(x){
+		this.x = GS.change_rounddna2image(x);
+	},
+
+	set_width :function(w){
+		this.width = GS.change_rounddna2image(w);
 	},
 
 	clear: function(){
@@ -305,9 +313,6 @@ Box.prototype = {
 			fromCenter: false
 		}
 		return j;
-	},
-	_get_changedsize: function(width){
-		return (GS.MAX_LENGTH * width) / GS.IMAGE_WIDTH;
 	},
 
 };
@@ -404,14 +409,6 @@ Box.prototype = {
 		},
 
 		/*
-		  画像の幅とDNAの配列の幅は異なります。
-		  スクロールなどの処理をしても、ずれないようにします。
-		*/
-		get_width_per_dna: function(){
-			return GS.IMAGE_WIDTH / this.layer ;
-		},
-
-		/*
 		  画像の名前はGBrowseで生成するときに、
 		  予め決まっていますので、任意の値のstartを
 		  変換して、サーバー上にある画像の名前のに一致させます。
@@ -468,12 +465,11 @@ Box.prototype = {
 				left = Utility.px2int(node.eq(0).css("left"));
 			}
 			else{
-				alert(mode +"は不適切な値です。");
-				return;
+				throw mode + "は不適切な値です。";
 			}
 
 			this.view.start += offset;
-			left -= offset * this.get_width_per_dna();
+			left -= offset * GS.get_width_per_dna(this.layer);
 			node.css("left", left);
 		},
 
@@ -620,7 +616,9 @@ Box.prototype = {
 
 		_update_overview: function(){
 			var node = $("#overview > canvas.box");
-
+			this.overview_box.set_x(this.view.start);
+			this.overview_box.set_width(this.layer);
+			this.overview_box.draw();
 		},
 
 		//eventハンドラー
@@ -969,18 +967,6 @@ Box.prototype = {
 //init
 window.onload = function(){
 	setInterval(_DEBUG, 1000);
-
 	/* start layer nameを指定します。 */
 	_Genome = new genome(1501, 100, GS.TRACK_NAME);
-	
-	var rect = {
-		fillStyle: "pink",
-		x: 1000, y:0,
-		width: 10,
-		height:200,
-		fromCenter: false,
-	}
-	var node = $("#overview > canvas.box");
-	b = new Box(node, rect);
-	b.draw();
 };
