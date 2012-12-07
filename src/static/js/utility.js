@@ -102,6 +102,19 @@ Utility.prototype = {
 			one : one,
 		};
 
+		//サーバーからのデータ変換をします。
+		string2json: function(data){
+			return eval("(" + data + ")");
+		};
+
+		/*
+		  cssの値でpxの場合、とって数値にします。
+		  "100px"(文字列) => 100(数値)
+		*/
+		px2int: function(str){
+			return parseInt(str.replace("px" ,""))
+		};
+
 	},
 };
 

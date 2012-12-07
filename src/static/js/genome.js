@@ -941,14 +941,6 @@ todo:viewの書き換えるタイミングをあわせる
 
 	};
 
-
-	//private methods for utility
-
-	//サーバーからのデータ変換
-	function _string2json(data){
-		return eval("(" + data + ")");
-	};
-
 	//cssの値でpxの場合、とって数値にする
 	//"100px"(文字列) => 100(数値)
 	function _px2int(str){
