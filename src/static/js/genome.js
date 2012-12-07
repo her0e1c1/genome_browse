@@ -1,27 +1,6 @@
 //global settings
 var _genome;
-
-/*
-memo
-
-画像データ
-画像データをもつリスト
-リストを複数用意(tracks)
-
-更新する？
-リストの中身更新
-画像をずらすだけ
-
-描写する
-tracksを表示
-画像をずらす
-
-イベントハンドラ
-
-
-スクロール
-再描画
-*/
+var UTIL = new Utility();
 
 /*
 スクロールの注意
@@ -56,13 +35,6 @@ var MAX_LENGTH = 30000000; //30M
 //取得するデータ名
 var TRACK_NAME = ["sample"];
 
-function _D(str){
-	var d = $("#debug")
-		.append("<p/>")
-		.children(":last")
-		.html(str);
-
-}
 function _DEBUG(){
 
 	var txt = "";
@@ -992,8 +964,7 @@ window.onload = function(){
 	//モジュールを呼び出す
 	//start layer nameを指定
 	_genome = new genome(1501, 100, ["sample", "sample"]);
-
-
+	
 	var rect = {
 		fillStyle: "pink",
 		x: 1000, y:0,
@@ -1005,12 +976,3 @@ window.onload = function(){
 	b = new Box(node, rect);
 	b.draw();
 };
-var b;
-
-function a(v){
-	while(ture){
-		var temp = v / 10
-		
-	}
-
-}
