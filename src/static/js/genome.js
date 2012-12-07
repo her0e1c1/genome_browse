@@ -34,7 +34,11 @@ GlobalSettings.prototype = {
 		this.PATH = {images: "/static/images/"};
 
 		// スクロールに対して、移動の微調整をする変数です。
+		// 画像をスクロールした場合
 		this.SCROLL_WIGHT = 0.001;
+
+		//overviewをスクロールした場合
+		this.SCROLL_OVERVIEW = -0.01;
 
 		//サーバーから必要なゲノム情報
 		this.MAX_LENGTH = 30000000; //30M
@@ -315,6 +319,18 @@ Box.prototype = {
 		return j;
 	},
 
+	/*
+	  xが領域内であればtrueを返します。
+	  xはDNAの位置を画像の幅に変更したものがきます。
+	*/
+	is_inside: function(x){
+		var r = false;
+		if(this.x <= x &&
+		   this.x + this.width >= x)
+			r = true;
+		return r;
+	},
+
 };
 
 /*
@@ -340,24 +356,13 @@ Box.prototype = {
 			this.layer;
 			this.name;
 			this.imagelists;
+			this.overview_box;
 
 			//htmlの初期化
 			this._init_set_options();
 
 			//overview
 			this._init_overview();
-
-			//overview boxの描写です。
-			var rect = {
-				fillStyle: "pink",
-				x: start, y:0,
-				width: layer,
-				height:200,
-				fromCenter: false,
-			}
-			var node = $("#overview > canvas.box");
-			this.overview_box = new Box(node, rect);
-			this.overview_box.draw();
 
 			//event登録
 			this._event_controler_select();
@@ -502,6 +507,7 @@ Box.prototype = {
 			//layerの初期値を選択させておきます。
 			$("#controller_select").val(layer);
 
+			//overview boxを描写します。
 			this.view ={
 				start: start,
 				stop: stop,
@@ -509,6 +515,18 @@ Box.prototype = {
 			this.layer = layer;
 			this.name = name;
 			this.imagelists = new Array();
+
+			var rect = {
+				fillStyle: "pink",
+				x: start, y:0,
+				width: layer,
+				height:200,
+				fromCenter: false,
+			}
+			var node = $("#overview > canvas.box");
+			this.overview_box = new Box(node, rect);
+			this.overview_box.draw();
+
 
 			/*
 			  残像が残る可能性があります。
@@ -823,6 +841,12 @@ Box.prototype = {
 			var node = $("#overview > canvas.box");
 
 			/*
+			  boxをクリックした場合は
+			  boxごと動かすドラッグイベントを発生させます。
+			 */
+			var flag_drag = false;
+
+			/*
 			  ドラッグイベント
 			  ドラッグした大きさに合わせて画像を描写します。
 			  クリックイベントと排他的にならないといけません。
@@ -832,18 +856,28 @@ Box.prototype = {
 				flag = true;
 				start_x = event.offsetX;
 				$(this).clearCanvas();
-				return false;
+
+				if(self.overview_box.is_inside(event.offsetX))
+					flag_drag = true;
 			});
 
 			//ドラッグ中、正方形を描写するだけです。
 			node.mousemove(function(event){
 				if(flag){
-					var offset_x = (event.offsetX - start_x);
-					//todo: 二色の長方形を描写するようにします。
-					self.overview_box.clear();
-					self.overview_box.x = start_x;
-					self.overview_box.width = offset_x;
-					self.overview_box.draw();
+					if (flag_drag){
+						var start =GS.change_image2rounddna(event.offsetX);
+						//boxの真ん中を動くようにします。
+						start -= self.layer / 2;
+						self.first_show(start, self.layer, self.name);
+					}
+					else{
+						var offset_x = (event.offsetX - start_x);
+						//todo: 二色の長方形を描写するようにします。
+						self.overview_box.clear();
+						self.overview_box.x = start_x;
+						self.overview_box.width = offset_x;
+						self.overview_box.draw();
+					}
 				}
 			});
 
@@ -853,19 +887,24 @@ Box.prototype = {
 			 */
 			node.mouseup(function(event){
 				var offset = event.offsetX - start_x;
-				if(offset === 0){
-					var start = GS.change_image2rounddna(event.offsetX);
-					self.first_show(start, self.layer, self.name);
+				if(flag_drag){
+					self.update();
 				}
 				else{
-					var zoom = GS.change_image2rounddna(offset);
-					var layer = GS.get_value_near_zoom(zoom);
-					var min = Math.min(start_x, event.offsetX);
-					var start = GS.change_image2rounddna(min);
-					self.first_show(start, layer, self.name);
+					if(offset === 0){
+						var start = GS.change_image2rounddna(event.offsetX);
+						self.first_show(start, self.layer, self.name);
+					}
+					else{
+						var zoom = GS.change_image2rounddna(offset);
+						var layer = GS.get_value_near_zoom(zoom);
+						var min = Math.min(start_x, event.offsetX);
+						var start = GS.change_image2rounddna(min);
+						self.first_show(start, layer, self.name);
+					}
 				}
-				//$(this).clearCanvas();
 				flag = false;
+				flag_drag = false;
 			});
 
 		},
