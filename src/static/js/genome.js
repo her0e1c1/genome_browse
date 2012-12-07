@@ -9,17 +9,22 @@ var Utility = new Utility();
 */
 
 /*
- 一枚あたりの画像の幅
- 画像の幅はGBrowseで生成していくときに決定しますので
- この値は変更できません。
+Gemone Browserの各種設定です。
+ユーザーやサーバーから変更がない限りは変更できない定数です。
+また、変換などのユーティリティも加えてます。
 */
-
 GlobalSettings = function(){
 	this.init.apply(this, arguments);
 };
 
 GlobalSettings.prototype = {
 	init: function(){
+
+		/*
+		  一枚あたりの画像の幅
+		  画像の幅はGBrowseで生成していくときに決定しますので
+		  この値は変更できません。
+		*/
 		this.IMAGE_WIDTH = 800;
 		this.IMAGE_HEIGHT = 100;
 
@@ -28,9 +33,33 @@ GlobalSettings.prototype = {
 
 		this.PATH = {images: "/static/images/"};
 
+		// スクロールに対して、移動の微調整をする変数です。
+		this.SCROLL_WIGHT = 0.001;
+
 		//サーバーから必要なゲノム情報
 		this.MAX_LENGTH = 30000000; //30M
-		//this.MAX_LENGTH = 3000; //30M
+		this.MAX_LENGTH = 3000;
+		//表示用に切りがいい数値に変換します。
+		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
+
+		//select>optionの値です。
+		this.LAYER_VALUES =  [
+			100,
+			200,
+			1000, //1k
+			2000,
+			5000,
+			10000, //10k
+			20000,
+			50000,
+			100000, //100k
+			200000,
+			500000,
+			1000000, //1M
+		];
+
+		//layerの最小値です。
+		this.MIN_LAYER = this.LAYER_VALUES[0];
 
 		//取得するデータ名
 		this.TRACK_NAME = ["sample"];
@@ -38,9 +67,33 @@ GlobalSettings.prototype = {
 		//css関連
 		this.OVERVIEW_HEIGHT = 50;
 	},
+
+	/*
+	  切り上げたDNAの長さから画像の幅に変換します。
+	*/
+	change_rounddna2image: function(dna){
+		return (GS.IMAGE_WIDTH * dna) / GS.ROUND_MAX_LENGTH;
+	},
+
+	/*
+	  画像の幅からDNA配列へのサイズ変換です。
+	*/
+	get_changedsize: function(width){
+		return (GS.MAX_LENGTH * width) / GS.IMAGE_WIDTH;
+	},
+
+	//layerの値と一致した番号を返します。
+	get_index_of_layer: function(layer){
+		for(var i = 0; i < GS.LAYER_VALUES.length; i++){
+			if(layer === GS.LAYER_VALUES[i]){
+				return i;
+			}
+		}
+		throw "layerが不適切な値です。";
+	},
 };
 
-GS = new GlobalSettings();
+var GS = new GlobalSettings();
 
 function _DEBUG(){
 
@@ -70,7 +123,7 @@ Image = function(start, layer, name){
 	  /static/images/name/layer/start.png
 	  のようになっています。
 	*/
-	this.src = Utility.make_src_path(start, layer, name)
+	this.src = Utility.make_src_path(start, layer, name, GS.PATH.images)
 	this.stop = start + layer - 1;
 };
 
@@ -220,12 +273,7 @@ Box.prototype = {
 };
 
 /*
- genomeモジュールはjqueryに依存しています。
- クライアントの仕事
- staticにある画像を表示します。
-
-todo:viewの書き換えるタイミングをあわせる
-
+ genomeモジュールはjqueryとjcanvasに依存しています。
  */
 (function(window){
 
@@ -248,36 +296,11 @@ todo:viewの書き換えるタイミングをあわせる
 			this.name;
 			this.imagelists;
 
-			// スクロールに対して、移動の微調整をする変数です。
-			this.SCROLL_WIGHT = 0.001;
-
-			//select>optionの値です。
-			this.LAYER_VALUES =  [
-				100,
-				200,
-				1000, //1k
-				2000,
-				5000,
-				10000, //10k
-				20000,
-				50000,
-				100000, //100k
-				200000,
-				500000,
-				1000000, //1M
-			];
-
-			//layerの最小値です。
-			this.MIN_LAYER = this.LAYER_VALUES[0];
-
-			//表示用に切りがいい数値に変換します。
-			this.ROUND_MAX_LENGTH = Utility.roundout(GS.MAX_LENGTH);
-
 			//htmlの初期化
 			this._init_set_options();
 
 			//overview
-			this._init_set_overview();
+			this._init_overview();
 
 			//overview boxの描写です。
 			var rect = {
@@ -375,8 +398,8 @@ todo:viewの書き換えるタイミングをあわせる
 
 		//layerの値と一致した番号を返します。
 		get_index_of_layer: function(){
-			for(var i = 0; i < this.LAYER_VALUES.length; i++){
-				if(this.layer === this.LAYER_VALUES[i]){
+			for(var i = 0; i < GS.LAYER_VALUES.length; i++){
+				if(this.layer === GS.LAYER_VALUES[i]){
 					return i;
 				}
 			}
@@ -401,7 +424,7 @@ todo:viewの書き換えるタイミングをあわせる
 		  最小値は100です。
 		*/
 		get_value_near_zoom: function(value){
-			var MIN_LAYER = this.MIN_LAYER;
+			var MIN_LAYER = GS.MIN_LAYER;
 			var option_values = new Array();
 			var children = $("#controller_select").children();
 
@@ -481,7 +504,7 @@ todo:viewの書き換えるタイミングをあわせる
 			var stop = this.get_view_stop(start);
 
 			if(layer === undefined){
-				this.layer = this.MIN_LAYER;
+				this.layer = GS.MIN_LAYER;
 			}
 			//layerの初期値を選択させておきます。
 			$("#controller_select").val(layer);
@@ -674,8 +697,8 @@ todo:viewの書き換えるタイミングをあわせる
 			plus.click(function(){
 				var index = self.get_index_of_layer();
 				index++;
-				if(self.LAYER_VALUES.length > index){
-					var new_layer = self.LAYER_VALUES[index];
+				if(GS.LAYER_VALUES.length > index){
+					var new_layer = GS.LAYER_VALUES[index];
 					var start = self.get_start_after_zoom(
 						self.view.start,
 						self.layer,
@@ -688,7 +711,7 @@ todo:viewの書き換えるタイミングをあわせる
 				var index = self.get_index_of_layer();
 				index--;
 				if(0 <= index){
-					var new_layer = self.LAYER_VALUES[index];
+					var new_layer = GS.LAYER_VALUES[index];
 					var start = self.get_start_after_zoom(
 						self.view.start,
 						self.layer,
@@ -747,7 +770,7 @@ todo:viewの書き換えるタイミングをあわせる
 
 			$("#show_images").mousemove(function(event){
 				var offset_x;
-				var WIGHT = self.SCROLL_WIGHT;
+				var WIGHT = GS.SCROLL_WIGHT;
 
 				if(flag){
 					offset_x = WIGHT * (event.clientX - start_x);
@@ -861,7 +884,7 @@ todo:viewの書き換えるタイミングをあわせる
 
 		//init
 		_init_set_options: function(){
-			var layers = this.LAYER_VALUES;
+			var layers = GS.LAYER_VALUES;
 			for(var i = 0 ; i < layers.length; i++){
 				var n = $("#controller_select").append("<option />");
 				n = n.children(":last");
@@ -872,15 +895,14 @@ todo:viewの書き換えるタイミングをあわせる
 		},
 
 		/*
-		  MAX_LANGTHは計算しやすいようになっていますので、
-		  1Mなどの倍数に変換する必要あります。
+		  
 		*/
-		_init_set_overview: function(){
+		_init_overview: function(){
 			$("#overview_scale").attr("width", GS.IMAGE_WIDTH);
 			$("#overview_scale").attr("height", GS.OVERVIEW_HEIGHT);
 			$("canvas").attr("width", GS.IMAGE_WIDTH);
 			$("canvas").attr("height", GS.OVERVIEW_HEIGHT);
-			$("canvas.box").css("top", "-50px")
+			$("canvas.box").css("top", (- GS.OVERVIEW_HEIGHT) + "px");
 			var color = "#000";
 			var ctx = $("#overview_scale");
 			var ONE_MEGA = 1000000;
@@ -891,7 +913,7 @@ todo:viewの書き換えるタイミングをあわせる
 				height: 2,
 				fromCenter: false
 			}
-			ctx.drawRect(r);
+			//ctx.drawRect(r);
 
 			var vertical_line = {
 				fillStyle: color,
@@ -901,21 +923,21 @@ todo:viewの書き換えるタイミングをあわせる
 				fromCenter: false,
 			}
 
-			//0.1Mずつ縦線を描写します。
-			//解像度の関係で正確なメモリは刻めません。
-			var interval = (GS.IMAGE_WIDTH * ONE_MEGA * 0.1) / GS.MAX_LENGTH;
-			for(var x = 0; x <= GS.IMAGE_WIDTH; x += interval){
+			var interval = Utility.get_interval(GS.ROUND_MAX_LENGTH);
+
+			//1%ずつ縦線を表示します。
+			for(var i = 0; i < interval.one.length; i++){
+				var x = GS.change_rounddna2image(interval.one[i]);
 				vertical_line.x = x;
 				ctx.drawRect(vertical_line);
 			}
 
-			//1Mずつ太い線を描写します。
+			//10%ずつ太い縦線を描写します。
 			vertical_line.y -= 1;
 			vertical_line.height += 2;
 			vertical_line.width = 1;
-			interval = (GS.IMAGE_WIDTH * ONE_MEGA) / GS.MAX_LENGTH;
-			//同時にメモリの描写もします。
-			var num = 0;
+
+			//メモリの描写もします。
 			var text = {
 				fillStyle: color,
 				strokeStyle: color,
@@ -924,13 +946,17 @@ todo:viewの書き換えるタイミングをあわせる
 				font: "9px Arial",
 				text: ""
 			}
-			for(var x = 0, i = 0; x <= GS.IMAGE_WIDTH; x += interval, i++){
-				vertical_line.x = x;
-				ctx.drawRect(vertical_line);
-				text.text = i + "M";
-				text.x = i * interval;
-				ctx.drawText(text);
-			}
+
+			 for(var i = 0; i < interval.ten.length; i++){
+				 var x = GS.change_rounddna2image(interval.ten[i]);
+				 vertical_line.x = x;
+				 ctx.drawRect(vertical_line);
+
+				 text.text = interval.ten[i];
+				 text.x = x;
+				 ctx.drawText(text);
+			 }
+
 		},
 
 	};

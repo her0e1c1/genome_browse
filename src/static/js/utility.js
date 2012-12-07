@@ -1,4 +1,8 @@
 
+/*
+Utilityクラスはgenome browserの設定に
+依存しない計算を扱うようにします。
+*/
 Utility = function(){
 	this.init.apply(this, arguments);
 };
@@ -74,19 +78,19 @@ Utility.prototype = {
 		}
 	},
 
-	/* 
+	/*
 	   数値の10%ずつの値と1%ずつの値をjsonにして返します。
 
 	   input 250
-	   ret { ten: [25, 50, ... , 250 ], one:[2.5 , 5, ... 250]}
+	   ret { ten: [0, 25, 50, ... , 250 ], one:[0, 2.5 , 5, ... 250]}
 	*/
 	get_interval: function(number){
 		//半端な数は切り上げます。
 		if(number % 10 !== 0)
 			number = this.roundout(number);
 
-		var ten = [];
-		var one = [];
+		var ten = [0];
+		var one = [0];
 
 		var first = number / 10;
 		for(var i = 1; i <= 10 ; i++){
@@ -119,10 +123,10 @@ Utility.prototype = {
 
 	},
 
-	make_src_path: function (start, layer, name){
+	make_src_path: function (start, layer, name, root){
 		var src;
 		start = start + ".png";
-		var src = this.join(this.join(GS.PATH.images, name), layer);
+		var src = this.join(this.join(root, name), layer);
 		src = src + start;
 		console.log("image path: " + src);
 		return src;
