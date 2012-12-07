@@ -38,7 +38,7 @@ GlobalSettings.prototype = {
 
 		//サーバーから必要なゲノム情報
 		this.MAX_LENGTH = 30000000; //30M
-		this.MAX_LENGTH = 3000;
+		this.MAX_LENGTH = 3722;
 		//表示用に切りがいい数値に変換します。
 		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
 
@@ -69,6 +69,14 @@ GlobalSettings.prototype = {
 	},
 
 	/*
+	  画像の幅とDNAの配列の幅は異なります。
+	  スクロールなどの処理をしても、ずれないようにします。
+	*/
+	get_width_per_dna: function(layer){
+		return GS.IMAGE_WIDTH / layer ;
+	},
+
+	/*
 	  切り上げたDNAの長さから画像の幅に変換します。
 	*/
 	change_rounddna2image: function(dna){
@@ -78,19 +86,51 @@ GlobalSettings.prototype = {
 	/*
 	  画像の幅からDNA配列へのサイズ変換です。
 	*/
-	get_changedsize: function(width){
-		return (GS.MAX_LENGTH * width) / GS.IMAGE_WIDTH;
+	change_image2rounddna: function(width){
+		return (this.ROUND_MAX_LENGTH * width) / this.IMAGE_WIDTH;
 	},
 
 	//layerの値と一致した番号を返します。
 	get_index_of_layer: function(layer){
-		for(var i = 0; i < GS.LAYER_VALUES.length; i++){
-			if(layer === GS.LAYER_VALUES[i]){
+		for(var i = 0; i < this.LAYER_VALUES.length; i++){
+			if(layer === this.LAYER_VALUES[i]){
 				return i;
 			}
 		}
 		throw "layerが不適切な値です。";
 	},
+
+	/*
+	  LAYERの値のうち、value以下の中で最大をとるものを返します。
+      当てはまるものがない場合は最後のzoom値を返します。
+	  最小値は100です。
+	*/
+	get_value_near_zoom: function(value){
+		var MIN_LAYER = this.MIN_LAYER;
+		var option_values = new Array();
+		var children = $("#controller_select").children();
+		
+		//各optionの値を取り出します。
+		for(var i = 0; i < children.length; i++){
+			var v = parseInt(children.eq(i).val());
+			option_values.push(v);
+		}
+		var prevalue = MIN_LAYER;
+		for(var i = 0; i < option_values.length; i++){
+			if(option_values[i] > value){
+				return prevalue;
+			}
+			prevalue = option_values[i];
+			
+		}
+		return prevalue;
+	},
+
+	/* 1Mのように読みやすい数値に変換します。*/
+	change_layervalue4show: function(){
+
+	},
+	
 };
 
 var GS = new GlobalSettings();
@@ -396,52 +436,9 @@ Box.prototype = {
 			return start + layer - 1;
 		},
 
-		//layerの値と一致した番号を返します。
-		get_index_of_layer: function(){
-			for(var i = 0; i < GS.LAYER_VALUES.length; i++){
-				if(this.layer === GS.LAYER_VALUES[i]){
-					return i;
-				}
-			}
-			alert("layerが不適切な値です。")
-		},
-
 		//viewとpointの差です。
 		get_current_offset: function(){
 			return this.view.start - this.imagelists[0].point.start;
-		},
-
-		/*
-		  画像の幅からDNA配列へのサイズ変換です。
-		*/
-		get_changedsize: function(width){
-			return (GS.MAX_LENGTH * width) / GS.IMAGE_WIDTH;
-		},
-
-		/*
-		  LAYERの値のうち、value以下の中で最大をとるものを返します。
-          当てはまるものがない場合は最後のzoom値を返します。
-		  最小値は100です。
-		*/
-		get_value_near_zoom: function(value){
-			var MIN_LAYER = GS.MIN_LAYER;
-			var option_values = new Array();
-			var children = $("#controller_select").children();
-
-			//各optionの値を取り出します。
-			for(var i = 0; i < children.length; i++){
-				var v = parseInt(children.eq(i).val());
-				option_values.push(v);
-			}
-			var prevalue = MIN_LAYER;
-			for(var i = 0; i < option_values.length; i++){
-				if(option_values[i] > value){
-					return prevalue;
-				}
-				prevalue = option_values[i];
-
-			}
-			return prevalue;
 		},
 
 		/*
@@ -582,6 +579,8 @@ Box.prototype = {
 		  update_pointに達していた場合
 		  画像の描写を更新します。
 		  条件に当てはった場合は更新します。
+
+		  todo: 最大長または１までしか表示できないようにします。
 		 */
 		update: function(){
 			var update_point = this.get_update_point();
@@ -695,7 +694,7 @@ Box.prototype = {
 			});
 
 			plus.click(function(){
-				var index = self.get_index_of_layer();
+				var index = GS.get_index_of_layer(self.layer);
 				index++;
 				if(GS.LAYER_VALUES.length > index){
 					var new_layer = GS.LAYER_VALUES[index];
@@ -708,7 +707,7 @@ Box.prototype = {
 				}
 			});
 			minus.click(function(){
-				var index = self.get_index_of_layer();
+				var index = GS.get_index_of_layer(self.layer);
 				index--;
 				if(0 <= index){
 					var new_layer = GS.LAYER_VALUES[index];
@@ -857,14 +856,14 @@ Box.prototype = {
 			node.mouseup(function(event){
 				var offset = event.offsetX - start_x;
 				if(offset === 0){
-					var start = self.get_changedsize(event.offsetX);
+					var start = GS.change_image2rounddna(event.offsetX);
 					self.first_show(start, self.layer, self.name);
 				}
 				else{
-					var zoom = self.get_changedsize(offset);
-					var layer = self.get_value_near_zoom(zoom);
+					var zoom = GS.change_image2rounddna(offset);
+					var layer = GS.get_value_near_zoom(zoom);
 					var min = Math.min(start_x, event.offsetX);
-					var start = self.get_changedsize(min);
+					var start = GS.change_image2rounddna(min);
 					self.first_show(start, layer, self.name);
 				}
 				//$(this).clearCanvas();
