@@ -21,7 +21,7 @@ var UTIL = new Utility();
 var IMAGE_WIDTH = 800;
 var IMAGE_HEIGHT = 100;
 
-//計算しやすい様に奇数
+//計算しやすい様に奇数です。
 var IMAGE_NUMBER = 5;
 
 var PATH = {images: "/static/images/"};
@@ -275,6 +275,9 @@ todo:viewの書き換えるタイミングをあわせる
 
 			//layerの最小値です。
 			this.MIN_LAYER = this.LAYER_VALUES[0];
+
+			//表示用に切りがいい数値に変換します。
+			this.ROUND_MAX_LENGTH = UTIL.roundout(MAX_LENGTH);
 
 			//htmlの初期化
 			this._init_set_options();

@@ -72,6 +72,37 @@ Utility.prototype = {
 			return f * Math.pow(10, d - 1) + s * Math.pow(10, d - 2);
 		}
 	},
+
+	/* 
+	   数値の10%ずつの値と1%ずつの値をjsonにして返します。
+
+	   input 250
+	   ret { ten: [25, 50, ... , 250 ], one:[2.5 , 5, ... 250]}
+	*/
+	get_interval: function(number){
+		//半端な数は切り上げます。
+		if(number % 10 !== 0)
+			number = this.roundout(number);
+
+		var ten = [];
+		var one = [];
+
+		var first = number / 10;
+		for(var i = 1; i <= 10 ; i++){
+			ten.push(first * i);
+		}
+
+		first = number / 100;
+		for(var i = 1; i <= 100; i++){
+			one.push(first * i);
+		}
+		
+		return json = {
+			ten : ten,
+			one : one,
+		};
+
+	},
 };
 
 u = new Utility(); //for debug
