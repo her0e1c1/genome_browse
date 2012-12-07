@@ -4,11 +4,6 @@
  box-sizing: border-box;
 }
 
-/*
- todo:
- 800pxなどと指定している箇所は、
- 後ほど、jsで変更できるようにしておきます。
- */
 body{
 	background-color: powderblue;
 }
@@ -25,12 +20,9 @@ body{
 }
 
 #wrap_show_images{
- width:800px;
  overflow:hidden;
 }
 #show_images {
- width: 8000px;
- height: 400px;
  position: relative;
 }
 

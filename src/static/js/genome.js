@@ -38,7 +38,7 @@ GlobalSettings.prototype = {
 		this.SCROLL_WIGHT = 0.001;
 
 		//overviewをスクロールした場合
-		this.SCROLL_OVERVIEW = -0.01;
+		//this.SCROLL_OVERVIEW = -0.01;
 
 		//サーバーから必要なゲノム情報
 		this.MAX_LENGTH = 30000000; //30M
@@ -66,10 +66,21 @@ GlobalSettings.prototype = {
 		this.MIN_LAYER = this.LAYER_VALUES[0];
 
 		//取得するデータ名
-		this.TRACK_NAME = ["sample"];
+		this.TRACK_NAME = ["sample", "sample"];
 
 		//css関連
 		this.OVERVIEW_HEIGHT = 50;
+	},
+
+	/*
+	  最大でとることのできるstartの値を返します。
+	  layerの値によります。
+
+	  最長が100でlayerが10のときは
+	  取りうるstartは91です。
+	*/
+	get_max_start: function(layer){
+		return (this.MAX_LENGTH - layer + 1);
 	},
 
 	/*
@@ -359,8 +370,9 @@ Box.prototype = {
 			this.overview_box;
 
 			//htmlの初期化
+			this._init_html();
 			this._init_set_options();
-
+			
 			//overview
 			this._init_overview();
 
@@ -487,8 +499,6 @@ Box.prototype = {
 		  画像の再描写のみであれば、こちらを呼びます。
 		 */
 		first_show: function(start, layer, name){
-
-
 			//未設定の場合の初期値を設定します。
 			if(name.length === 0){
 				alert("何も選択されていません。");
@@ -499,6 +509,13 @@ Box.prototype = {
 			   start <= 0 ){
 				start = 1;
 			}
+
+			//最大を超えていたら最大に設定します。
+			var max = GS.get_max_start(layer);
+			if(start > max){
+				start = max;
+			}
+			
 			var stop = this.get_view_stop(start);
 
 			if(layer === undefined){
@@ -594,11 +611,22 @@ Box.prototype = {
 		  画像の描写を更新します。
 		  条件に当てはった場合は更新します。
 
+		  ここでは既に次ぎに描写するstartやlayerが予め決まっています。
+
 		  todo: 最大長または１までしか表示できないようにします。
 		 */
 		update: function(){
 			var update_point = this.get_update_point();
-
+			
+			if(this.view.start <= 0 ){
+				this.view.start = 1;
+			}
+			//最大を超えていたら最大に設定します。
+			var max = GS.get_max_start(this.layer);
+			if(this.view.start > max){
+				this.view.start = max;
+			}
+			
 			//htmlの描画
 			this._update_overview();
 			/*
@@ -919,6 +947,11 @@ Box.prototype = {
 		},
 
 		//init
+
+		_init_html: function(){
+			$("#wrap_show_images").css("width", GS.IMAGE_WIDTH);
+		},
+
 		_init_set_options: function(){
 			var layers = GS.LAYER_VALUES;
 			for(var i = 0 ; i < layers.length; i++){
@@ -941,15 +974,6 @@ Box.prototype = {
 			$("canvas.box").css("top", (- GS.OVERVIEW_HEIGHT) + "px");
 			var color = "#000";
 			var ctx = $("#overview_scale");
-			var ONE_MEGA = 1000000;
-			var r = {
-				fillStyle: color,
-				x: 0, y: 24,
-				width: 800,
-				height: 2,
-				fromCenter: false
-			}
-			//ctx.drawRect(r);
 
 			var vertical_line = {
 				fillStyle: color,
@@ -992,6 +1016,26 @@ Box.prototype = {
 				 text.x = x;
 				 ctx.drawText(text);
 			 }
+
+		},
+
+		/*
+		   region
+		   layerの何倍を表示するかはsizeで決めます。
+		*/
+		_init_set_region: function(start ,layer, size){
+			var color = "#000";
+			var ctx = $("#overview_scale");
+			
+			var vertical_line = {
+				fillStyle: color,
+				x: 0, y: 23,
+				width: 0.5,
+				height: 4,
+				fromCenter: false,
+			}
+			
+			
 
 		},
 
