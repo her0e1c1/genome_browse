@@ -42,7 +42,7 @@ GlobalSettings.prototype = {
 
 		//サーバーから必要なゲノム情報
 		this.MAX_LENGTH = 30000000; //30M
-		this.MAX_LENGTH = 3722;
+		//this.MAX_LENGTH = 3722;
 		//表示用に切りがいい数値に変換します。
 		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
 
@@ -306,7 +306,9 @@ Box.prototype = {
 		return GS.change_dna2image(x, this.start, this.length);
 	},
 	draw: function(){
-		this.clear(); 
+		this.clear();
+		if(this.width < 1)
+			this.width = 5;
 		this.node.drawRect(this._to_json());
 	},
 	set_x :function(x){
