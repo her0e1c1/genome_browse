@@ -202,7 +202,7 @@ ImageList.prototype = {
 		this.layer = layer;
 		this.name = name;
 		this.images = new Array(GS.IMAGE_NUMBER);
-		this.point = this._get_each_side_point(start, layer);
+		this.point = Utility.get_side_point(start, layer, GS.IMAGE_NUMBER);
 		//画像データを生成する
 		for(var i = 0; i < GS.IMAGE_NUMBER; i++){
 			var i,st;

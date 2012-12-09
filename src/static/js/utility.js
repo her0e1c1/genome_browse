@@ -109,6 +109,69 @@ Utility.prototype = {
 
 	},
 
+	/*
+	  startの周囲の点を取り出します。
+
+	  (501, 100, 9)の場合
+	  [(101, 200), (201, 300), ... (901, 1000)]
+	  (first, last) = (101, 901)
+	  を返します。
+
+	  sizeは奇数とします。
+	 */
+	get_each_side_point: function(start, layer, size){
+		var first ,last;
+		
+		if(size % 2 == 0 ||
+		   size <= 0 ||
+		   this.is_natural(size) != true
+		  )
+			throw "sizeは奇数です";
+
+		first = start - layer * (size - 1) / 2;
+		last = start + layer * (size - 1) / 2;
+
+		if(first <= 0 ){
+			first = 1;
+			last = 1 + layer * (size - 1);
+		}
+
+		var ret = [];
+		for(var st = first; st <= last; st += layer){
+			var sp = st + layer - 1;
+			var p = {
+				start: st,
+				stop : sp
+			};
+			ret.push(p);
+		}
+
+		return ret;
+	},
+
+	/*
+	  get_each_side_pointの最小のstartと最大のstopを返します。
+	 */
+	get_side_point: function(start, layer, size){
+		var points = this.get_each_side_point(start, layer, size);
+		var p = {
+			start: points[0].start,
+			stop : points[points.length - 1].stop
+		};
+		return p;
+	},
+
+	/*
+	  0,1,2 ..なら真を返します。
+	 */
+	is_natural: function(v){
+		var ret = false;
+		if(Math.floor(v) == v || v < 0){
+			ret = true;
+		}
+		return ret;
+	},
+
 	//サーバーからのデータ変換をします。
 	stringtojson: function(data){
 		return eval("(" + data + ")");
