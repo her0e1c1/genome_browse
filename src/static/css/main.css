@@ -43,11 +43,6 @@ body{
 	background-color: #E0E0E0;
 	border:1px solid black;
 }
-#overview_box{
-	width:inherit;
-	height:inherit;
-	overflow:hidden;
-}
 #overview_scale{
 	float: left;
 }
@@ -60,4 +55,7 @@ canvas.box{
 	height: 50px;
 	background-color: InfoBackground;
 	border:1px solid black;
+}
+#region_scale{
+	float: left;
 }
