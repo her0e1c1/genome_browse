@@ -99,8 +99,8 @@ GlobalSettings.prototype = {
 	  画像の開始位置 : IMAGE_WIDTH =
 	  (DNAの位置 - NDAstart) : 表示する全体の長さ
 	 */
-	change_dna2image: function(x, start, DNAlength){
-		return (GS.IMAGE_WIDTH / DNAlength) * (x - start);
+	change_dna2image: function(x, start, length){
+		return (GS.IMAGE_WIDTH / length) * (x - start);
 	},
 
 	/*
@@ -276,28 +276,7 @@ ImageList.prototype = {
 			console.log("can't add image!");
 		}
 	},
-	/*
-	  (501, 300)の引き数の場合
-	  (301,800)を返します。
-	*/
-	_get_each_side_point: function(start, layer){
-		var st, sp, stop, size;
-		stop = start + layer - 1;
-		//奇数ということが前提です。
-		size = (GS.IMAGE_NUMBER - 1) / 2;
-			st = start - layer * size;
-		sp = stop + layer * size;
 
-		//エラー処理が必要
-		//if(st < 1){};
-			//if(sp > max);
-
-		var point = {
-			start: st,
-				stop: sp
-		};
-		return point;
-	},
 };
 
 Box = function(){
@@ -306,30 +285,38 @@ Box = function(){
 
 Box.prototype = {
 	/*
-	  x, widthに関しては、配列の始めとレイヤーです。
+	  rectのx, widthに関しては、配列の始めと含む配列のサイズです。
+	  全データの始めと終わりを決めることで描くboxの大きさが決まります。
 	 */
-	init: function(node, rect){
+	init: function(node, rect, start, stop){
 		this.node = node;
+		this.start = start;
+		this.stop = stop;
+		this.length = stop - start + 1;
 		this.fillStyle = rect.fillStyle,
-		this.x = this._change(rect.x);
 		this.y = rect.y;
-		this.width = this._change(rect.width);
+		this.rect_x = rect.x;
+		this.rect_width = rect.width;
 		this.height = rect.height;
+		this.set_x(rect.x);
+		this.set_width(rect.width);
 	},
-	//継承できるようにしました。
-	_change: function(v){
-		return GS.change_rounddna2image(v);
+
+	_change: function(x){
+		return GS.change_dna2image(x, this.start, this.length);
 	},
 	draw: function(){
 		this.clear(); 
 		this.node.drawRect(this._to_json());
 	},
 	set_x :function(x){
+		this.rect_x = x;
 		this.x = this._change(x);
 	},
 
 	set_width :function(w){
-		this.width = this._change(w);
+		this.rect_width = w;
+		this.width = this._change(w + this.rect_x) - this.x;
 	},
 
 	clear: function(){
@@ -361,6 +348,10 @@ Box.prototype = {
 };
 
 
+
+
+
+
 /*
  genomeモジュールはjqueryとjcanvasに依存しています。
  */
@@ -385,7 +376,7 @@ Box.prototype = {
 			this.name;
 			this.imagelists;
 			this.overview_box;
-			this.region_box;
+			this.region_box ;
 
 			//htmlの初期化
 			this._init_html();
@@ -559,7 +550,7 @@ Box.prototype = {
 				fromCenter: false,
 			}
 			var node = $("#overview > canvas.box");
-			this.overview_box = new Box(node, rect);
+			this.overview_box = new Box(node, rect, 1, GS.ROUND_MAX_LENGTH);
 			this.overview_box.draw();
 
 			/*
@@ -1069,6 +1060,7 @@ Box.prototype = {
 			var bothends = Utility.get_side_point(start, layer, size);
 			var DNAlength = bothends.stop - bothends.start + 1;
 			var interval = Utility.get_interval(DNAlength);
+
 			//最も大きくて、割り切れる、プロットする点
 			var last = bothends.stop - (bothends.stop % layer);
 
@@ -1091,19 +1083,29 @@ Box.prototype = {
 				 text.x = x;
 				 ctx.drawText(text);
 			}
+
+			//メモリをさらに1/10で刻みます。
+			last = bothends.stop - (bothends.stop % (layer / 10));
+
+			for(var p = last; bothends.start < p; p -= (layer/ 10)){
+				var x = GS.change_dna2image(p, bothends.start, DNAlength);
+				vertical_line.x = x;
+				ctx.drawRect(vertical_line);
+			}
 			
 			//region boxを描写します。
-			var x = GS.change_dna2image(start, bothends.start, DNAlength);
-			var w= GS.change_dna2image(stop, bothends.start, DNAlength) - x;
+			//var x = GS.change_dna2image(start, bothends.start, DNAlength);
+			//var w= GS.change_dna2image(stop, bothends.start, DNAlength) - x;
 			var rect = {
 				fillStyle: "pink",
-				x: x, y:0,
-				width: w,
+				x: start, y:0,
+				width: layer,
 				height:200,
 				fromCenter: false,
 			}
+
 			ctx = $("#region > canvas.box");
-			this.region_box = new Box(ctx, rect);
+			this.region_box = new Box(ctx ,rect , bothends.start, bothends.stop);
 			this.region_box.draw();
 
 		},
