@@ -191,7 +191,7 @@ Utility.prototype = {
 		start = start + ".png";
 		var src = this.join(this.join(root, name), layer);
 		src = src + start;
-		console.log("image path: " + src);
+		//console.log("image path: " + src);
 		return src;
 	},
 

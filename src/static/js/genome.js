@@ -31,6 +31,9 @@ GlobalSettings.prototype = {
 		//計算しやすい様に奇数です。
 		this.IMAGE_NUMBER = 5;
 
+		//リージョンに表示する範囲です(layer * 数値)
+		this.REGION_NUMBER = 9;
+
 		this.PATH = {images: "/static/images/"};
 
 		// スクロールに対して、移動の微調整をする変数です。
@@ -41,7 +44,8 @@ GlobalSettings.prototype = {
 		//this.SCROLL_OVERVIEW = -0.01;
 
 		//サーバーから必要なゲノム情報
-		this.MAX_LENGTH = 30000000; //30M
+		this.START = 1;
+		this.MAX_LENGTH = 30000001; //30M
 		//this.MAX_LENGTH = 3722;
 		//表示用に切りがいい数値に変換します。
 		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
@@ -100,7 +104,11 @@ GlobalSettings.prototype = {
 	  (DNAの位置 - NDAstart) : 表示する全体の長さ
 	 */
 	change_dna2image: function(x, start, length){
-		return (GS.IMAGE_WIDTH / length) * (x - start);
+		return (this.IMAGE_WIDTH / length) * (x - start);
+	},
+
+	change_image2dna: function(w, start, length){
+		return start + (w * length) / this.IMAGE_WIDTH;
 	},
 
 	/*
@@ -298,6 +306,7 @@ Box.prototype = {
 		this.rect_x = rect.x;
 		this.rect_width = rect.width;
 		this.height = rect.height;
+		//先にxから計算させます。
 		this.set_x(rect.x);
 		this.set_width(rect.width);
 	},
@@ -552,13 +561,13 @@ Box.prototype = {
 				fromCenter: false,
 			}
 			var node = $("#overview > canvas.box");
-			this.overview_box = new Box(node, rect, 1, GS.ROUND_MAX_LENGTH);
+			this.overview_box = new Box(node, rect, GS.START , GS.ROUND_MAX_LENGTH);
 			this.overview_box.draw();
 
 			/*
 			  regionの初期化をします。
 			*/
-			this._update_region(start , layer, 9);
+			this._update_region(start , layer, GS.REGION_NUMBER);
 
 
 
@@ -961,6 +970,62 @@ Box.prototype = {
 		  ただし、表示するのはImageListのpointにします。
 		 */
 		_event_region: function(){
+			var self = this;
+			/*
+			  mousedownイベント開始
+			 */
+			var flag = false;
+			var start_x;
+			var node = $("#region > canvas.box");
+			var bothends;
+			var length;
+
+			/*
+			  BOXをクリックした場合は
+			  boxごと動かすドラッグイベントを発生させます。
+			 */
+			var flag_drag = false;
+
+			node.mousedown(function(event){
+				//イベントの初期化
+				flag = true;
+				start_x = event.offsetX;
+				$(this).clearCanvas();
+				bothends = Utility.get_side_point(
+					self.view.start,
+					self.layer,
+					GS.REGION_NUMBER);
+				length = bothends.stop - bothends.start + 1;
+
+				if(self.overview_box.is_inside(event.offsetX))
+					flag_drag = true;
+			});
+
+
+			node.mouseup(function(event){
+				var offset = event.offsetX - start_x;
+				if(flag_drag){
+					self.update();
+				}
+				else{
+					if(offset === 0){
+						var start = GS.change_image2dna(
+							event.offsetX,
+							bothends.start,
+							length);
+						self.first_show(start, self.layer, self.name);
+					}
+					else{
+						var zoom = GS.change_image2rounddna(offset);
+						var layer = GS.get_value_near_zoom(zoom);
+						var min = Math.min(start_x, event.offsetX);
+						var start = GS.change_image2rounddna(min);
+						self.first_show(start, layer, self.name);
+					}
+				}
+				flag = false;
+				flag_drag = false;
+			});
 
 		},
 
@@ -1043,7 +1108,6 @@ Box.prototype = {
 		   メモリは割り切れる値を表示させます。
 
 		   viewの値が変わる毎に描写を書き換えていく必要があります。
-		   
 		*/
 		_update_region: function(start ,layer, size){
 			var color = "#000";
@@ -1096,8 +1160,6 @@ Box.prototype = {
 			}
 			
 			//region boxを描写します。
-			//var x = GS.change_dna2image(start, bothends.start, DNAlength);
-			//var w= GS.change_dna2image(stop, bothends.start, DNAlength) - x;
 			var rect = {
 				fillStyle: "pink",
 				x: start, y:0,
