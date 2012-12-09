@@ -20,6 +20,7 @@ GlobalSettings = function(){
 GlobalSettings.prototype = {
 	init: function(){
 
+		this.URL = document.URL;
 		/*
 		  一枚あたりの画像の幅
 		  画像の幅はGBrowseで生成していくときに決定しますので
@@ -1225,6 +1226,16 @@ Box.prototype = {
 //init
 window.onload = function(){
 	setInterval(_DEBUG, 1000);
-	/* start layer nameを指定します。 */
-	_Genome = new genome(1501, 100, GS.TRACK_NAME);
+	init();
+	function init(){
+		$.get(GS.URL + "/get_imagepath",{},function(data){
+			json = Utility.string2json(data);
+			//json.pathにはサーバーに保存された画像パスがあります。
+			GS.TRACK_NAME = json.path;
+
+			/* start layer nameを指定します。 */
+			_Genome = new genome(1501, 100, GS.TRACK_NAME);
+		})
+	}
 };
+

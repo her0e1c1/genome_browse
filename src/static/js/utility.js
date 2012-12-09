@@ -173,7 +173,7 @@ Utility.prototype = {
 	},
 
 	//サーバーからのデータ変換をします。
-	stringtojson: function(data){
+	string2json: function(data){
 		return eval("(" + data + ")");
 	},
 
