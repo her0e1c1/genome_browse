@@ -997,10 +997,33 @@ Box.prototype = {
 					GS.REGION_NUMBER);
 				length = bothends.stop - bothends.start + 1;
 
-				if(self.overview_box.is_inside(event.offsetX))
+				if(self.region_box.is_inside(event.offsetX))
 					flag_drag = true;
 			});
 
+			//ドラッグ中、正方形を描写するだけです。
+			node.mousemove(function(event){
+				if(flag){
+					if (flag_drag){
+						/* ドラッグは背景を動かさないといけない */
+						var start =GS.change_image2dna(
+							event.offsetX,
+							bothends.start,
+							length);
+						//boxの真ん中を動くようにします。
+						start -= self.layer / 2;
+						self.first_show(start, self.layer, self.name);
+					}
+					else{
+						var offset_x = (event.offsetX - start_x);
+						//todo: 二色の長方形を描写するようにします。
+						//表示するだけなのでDNA配列の情報は無視します。
+						self.region_box.x = start_x;
+						self.region_box.width = offset_x;
+						self.region_box.draw();
+					}
+				}
+			});
 
 			node.mouseup(function(event){
 				var offset = event.offsetX - start_x;
@@ -1016,10 +1039,26 @@ Box.prototype = {
 						self.first_show(start, self.layer, self.name);
 					}
 					else{
-						var zoom = GS.change_image2rounddna(offset);
+						var x1 = GS.change_image2dna(
+							event.offsetX,
+							bothends.start,
+							length);
+							
+						var x2 = GS.change_image2dna(
+							start_x,
+							bothends.start,
+							length);
+							
+						var zoom = x1 - x2;
+						if(zoom < 0)
+							zoom = -zoom;
+
 						var layer = GS.get_value_near_zoom(zoom);
 						var min = Math.min(start_x, event.offsetX);
-						var start = GS.change_image2rounddna(min);
+						var start =  GS.change_image2dna(
+							min,
+							bothends.start,
+							length);
 						self.first_show(start, layer, self.name);
 					}
 				}
@@ -1028,6 +1067,7 @@ Box.prototype = {
 			});
 
 		},
+
 
 		//init
 
