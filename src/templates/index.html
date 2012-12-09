@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
  <head>
    <meta charset="UTF-8" />
@@ -9,9 +8,24 @@
    <link rel="stylesheet" type="text/css" href="/static/css/main.css">
  </head>
  <body>
+   <div id="wrap">
+	 <div id="header">
+	   <h3>Genome Browser</h3>
+	 </div>
+	 <div id="page_title">
+	 </div>
+	 <div id="tab_menu">
+	   <ul>
+		 <li>Browser</li>
+		 <li>Select Tracks</li>
+		 <li>Preferences</li>
+	   </ul>
+	 </div>
    <div id="main">
+	 <form>
+	   Region Start:<input id="input_view_start"type="text" />
+	 </form>
 	 <div id="main_center">
-	   <h1>Genome Browser</h1>
 	   <div id="controller">
 		 <button id="controller_button_double_left">＜＜</button>
 		 <button id="controller_button_left">＜</button>
@@ -20,26 +34,27 @@
 		 <button id="controller_button_plus">＋</button>
 		 <button id="controller_button_right">＞</button>
 		 <button id="controller_button_double_right">＞＞</button>
-		 <form>
-		   Region Start:<input id="input_view_start"type="text" />
-		 </form>
 	   </div>
-	   overview
+	    <p>overview</p>
 	   <div id="overview">
-		   <canvas id="overview_scale"></canvas>
-		   <canvas class="box"></canvas>
+		 <canvas id="overview_scale"></canvas>
+		 <canvas class="box"></canvas>
 	   </div>
-	   region
 	   <div id="region">
-		   <canvas id="region_scale"></canvas>
-		   <canvas class="box"></canvas>
+		 <canvas id="region_scale"></canvas>
+		 <canvas class="box"></canvas>
 	   </div>
+	 </div>
 	   <div id="wrap_show_images">
 	   <div id="show_images"></div>
 	   </div>
 	   <div id="debug"></div>
 	   <div id="show_data"></div>
 	 </div>
+   </div>
+   <div id="footer">
+	 <p>The Generic Genome Browser. For questions about the data at this site, please contact its webmaster</p>
+   </div>
    </div>
  </body>
 </html>

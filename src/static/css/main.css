@@ -5,18 +5,36 @@
 }
 
 body{
-	background-color: powderblue;
-}
-#main{
-	background-color: beige;
-	width:1000px;
-	border: 1px solid black;
-	margin-left:auto;margin-right:auto;
+	background-color: #E7F6F8;
 }
 
-#main_center{
-	margin-left: 100px;
-	margin-right: 100px;
+#wrap{
+	padding:5px;
+}
+
+#header{
+	height:25px;
+	background-color:khaki;
+}
+
+#main{
+	width:100%;
+	clear:both;
+	background-color: beige;
+	border: 1px solid black;
+}
+
+/* #main_center{ */
+/* 	width:800px; */
+/* 	padding:0px auto; */
+/* 	margin:0px auto; */
+/* } */
+
+.center {
+	width:800px;
+	float:left;
+	padding:0px auto;
+	margin:0px auto;
 }
 
 #wrap_show_images{
@@ -58,4 +76,17 @@ canvas.box{
 }
 #region_scale{
 	float: left;
+}
+
+
+#tab_menu ul{
+	list-style: none;
+}
+#tab_menu li{
+	margin: 0px 10px 0px 10px;
+	color: blue;
+	float: left;
+}
+#tab_menu li:hover{
+	background-color: #EDED33;
 }

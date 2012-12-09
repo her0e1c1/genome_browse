@@ -977,7 +977,7 @@ Box.prototype = {
 			 */
 			var flag = false;
 			var start_x;
-			var node = $("#region > canvas.box");
+			var node = $("#region  canvas.box");
 			var bothends;
 			var length;
 
@@ -1235,6 +1235,8 @@ window.onload = function(){
 
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1501, 100, GS.TRACK_NAME);
+
+			$("#page_title").text("name" + _Genome.view.start)
 		})
 	}
 };
