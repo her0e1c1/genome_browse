@@ -1057,7 +1057,7 @@ Box.prototype = {
 				n = n.children(":last");
 				n.attr("value", layers[i]);
 				//to do 表示の仕方を変更する1000 => 1k
-				n.text("show " + layers[i] + "p");
+				n.text("show " + layers[i] + "bp");
 			}
 		},
 
@@ -1233,15 +1233,18 @@ window.onload = function(){
 	}
 
 	/* クリックするとその周辺を表示、非表示にします。 */
-	var minus = GS.PATH.images + "browser/minus.png"
+	var minus = GS.PATH.images + "browser/minus.png";
+	var plus = GS.PATH.images + "browser/plus.png";
 	$("img.minus")
 		.attr("src", minus)
 		.click(function(){
-			var c = $(this).parent().parent().children(".center");
+			var c = $(this).parent().parent().find(".click_hide");
 			if(c.css("display") === "none"){
+				$(this).attr("src", minus);
 				c.show();
 			}
 			else{
+				$(this).attr("src", plus);
 				c.hide();
 			}
 		});

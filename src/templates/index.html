@@ -22,24 +22,33 @@
 	  </ul>
 	</div>
 	<div id="main">
-	  <form>
-		Region Start:<input id="input_view_start"type="text" />
-	  </form>
-	  <div id="controller" class="center">
-		<button id="controller_button_double_left">＜＜</button>
-		<button id="controller_button_left">＜</button>
-		<button id="controller_button_minus">ー</button>
-		<select id="controller_select"></select>
-		<button id="controller_button_plus">＋</button>
-		<button id="controller_button_right">＞</button>
-		<button id="controller_button_double_right">＞＞</button>
+	  <div id="search">
+		<div class="leftside">
+		  <img class="minus" />
+		  <p>Search</p>
+		  <div class="click_hide">
+			<form id="view_start">
+			  Region Start:<input id="input_view_start"type="text" />
+			</form>
+		  </div>
+		</div>
+		<div id="controller" class="center click_hide">
+		  <p>Scroll/Zoom:</p>
+		  <button id="controller_button_double_left">＜＜</button>
+		  <button id="controller_button_left">＜</button>
+		  <button id="controller_button_minus">ー</button>
+		  <select id="controller_select"></select>
+		  <button id="controller_button_plus">＋</button>
+		  <button id="controller_button_right">＞</button>
+		  <button id="controller_button_double_right">＞＞</button>
+		</div>
 	  </div>
 	  <div id="overview">
 		<div class="leftside">
 		  <img class="minus" />
 		  <p>Overview</p>
 		</div>
-		<div class="center">
+		<div class="center click_hide">
 		  <canvas id="overview_scale"></canvas>
 		  <canvas class="box"></canvas>
 		</div>
@@ -49,7 +58,7 @@
 		  <img class="minus" />
 		  <p>Region</p>
 		</div>
-		<div class="center">
+		<div class="center click_hide">
 		  <canvas id="region_scale"></canvas>
 		  <canvas class="box"></canvas>
 		</div>
@@ -59,7 +68,7 @@
 		  <img class="minus" />
 		  <p>Details</p>
 		</div>
-		<div class="center">
+		<div class="center click_hide">
 		  <div id="wrap_show_images">
 			<div id="show_images"></div>
 		  </div>

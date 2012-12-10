@@ -5,7 +5,7 @@
 }
 
 body{
-	background-color: #E7F6F8;
+	background-color: #F7FCFC;
 }
 
 #wrap{
@@ -58,12 +58,13 @@ body{
 }
 .leftside > img{
 	float:left;
-	
+
 }
 .leftside p{
 	float:left;
 	font-weight: bold;
 }
+
 canvas.box{
 	position:relative;
 	opacity:0.5;
@@ -75,20 +76,17 @@ canvas.box{
 #overview .center{
 	background-color: #E0E0E0;
 	/*要設定*/
-	height:50px;				
+	height:50px;
 	border:1px solid black;
 }
 #overview_scale{
 	/* box上に重ねるため*/
-	float: left; 				
+	float: left;
 }
 
 /*
  *  region
  */
-#region{
-	clear: both;
-}
 #region .center{
 	height: 50px;
 	background-color: InfoBackground;
@@ -114,6 +112,32 @@ canvas.box{
 	background-color: #EDED33;
 }
 
+/*
+ *  search
+ */
+#search{
+
+}
+#search p{
+	
+}
+
+#controller{
+	clear: both;
+}
+
+#controller p,
+#controller button,
+#controller select{
+	float: left;
+}
+
+
+/* clear箇所*/
+#search, #region, #overview, #details, #view_start
+{
+	clear: both;
+}
 hr.dummy{
 	/* floatの影響を消します。*/
 	clear: both;
