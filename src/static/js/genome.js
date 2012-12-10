@@ -1,12 +1,3 @@
-//global settings
-var _Genome;
-var Utility = new Utility();
-
-/*
-スクロールの注意
-右にスクロールする場合は
-ゲノムの配列の番号の小さい方を表示するので逆に動きます。
-*/
 
 /*
 Gemone Browserの各種設定です。
@@ -168,8 +159,6 @@ GlobalSettings.prototype = {
 	},
 	
 };
-
-var GS = new GlobalSettings();
 
 function _DEBUG(){
 
@@ -356,10 +345,6 @@ Box.prototype = {
 	},
 
 };
-
-
-
-
 
 
 /*
@@ -1221,6 +1206,11 @@ Box.prototype = {
 }(window));
 
 
+//global settings
+var _Genome;
+var Utility = new Utility();
+var GS = new GlobalSettings();
+
 //init
 window.onload = function(){
 	setInterval(_DEBUG, 1000);
@@ -1238,4 +1228,3 @@ window.onload = function(){
 		})
 	}
 };
-
