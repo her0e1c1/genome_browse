@@ -291,8 +291,12 @@ Box.prototype = {
 	},
 	draw: function(){
 		this.clear();
-		if(this.width < 1)
-			this.width = 5;
+		//小さすぎる場合は、補正します。
+		if(0 <= this.width && this.width < 2.5)
+			this.width = 2.5;
+		else if(-2.5 <= this.width && this.width < 0)
+			this.width = -2.5;
+
 		this.node.drawRect(this._to_json());
 	},
 	set_x :function(x){
