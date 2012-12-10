@@ -62,7 +62,7 @@ GlobalSettings.prototype = {
 		this.MIN_LAYER = this.LAYER_VALUES[0];
 
 		//取得するデータ名
-		this.TRACK_NAME = ["sample", "sample"];
+		this.TRACK_NAME = ["sample"];
 
 		//css関連
 		this.OVERVIEW_HEIGHT = 50;
@@ -1219,7 +1219,7 @@ window.onload = function(){
 		$.get(GS.URL + "/get_imagepath",{},function(data){
 			json = Utility.string2json(data);
 			//json.pathにはサーバーに保存された画像パスがあります。
-			GS.TRACK_NAME = json.path;
+			//GS.TRACK_NAME = json.path;
 			
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1501, 100, GS.TRACK_NAME);
@@ -1227,4 +1227,35 @@ window.onload = function(){
 			$("#page_title").text("name" + _Genome.view.start)
 		})
 	}
+var minus = GS.PATH.images + "browser/minus.png"
+$("img.minus")
+		.attr("src", minus)
+		.click(function(){
+			var c = $(this).parent().parent().children(".center");
+			if(c.css("display") === "none"){
+				c.show();
+			}
+			else{
+				c.hide();
+			}
+		});
+
+	$("#tab_menu > ul > li").click(function(event){
+		var self = $(this);
+		var main = $("#main");
+
+		var text = self.text();
+		if(text === "Select Tracks"){
+			main.hide();
+		}
+		else if (text === "Browser"){
+			main.slideDown();
+		}	
+		if(text === "Preferences"){
+			main.hide();
+		}
+	});
+
+
 };
+
