@@ -24,52 +24,65 @@ body{
 	border: 1px solid black;
 }
 
-/* #main_center{ */
-/* 	width:800px; */
-/* 	padding:0px auto; */
-/* 	margin:0px auto; */
-/* } */
-
-.center {
-	width:800px;
-	float:left;
-	padding:0px auto;
-	margin:0px auto;
-}
-
+/*
+ *  show_image
+ */
 #wrap_show_images{
  overflow:hidden;
 }
 #show_images {
  position: relative;
 }
-
 #show_images img {
  float: left;
  position: relative;
- /* 初期値 */
+ /* 初期値を先に代入 */
  top: 0px;
  left: 0px;
 }
 #show_images div{
- clear:left;
+	/* 複数のトラックのため */
+	clear:left;
 }
 
-#overview{
-	width: 800px;
-	height: 50px;
-	background-color: #E0E0E0;
-	border:1px solid black;
+/*
+ *  overviewとregionの共通設定
+ */
+.center {
+	width:800px;
+	margin:0px auto;
 }
-#overview_scale{
+.leftside{
+	clear:both;
 	float: left;
 }
+.leftside p{
+	font-weight: bold;
+}
+
 canvas.box{
 	position:relative;
 	opacity:0.5;
 }
-#region{
-	width: 800px;
+
+/*
+ *  overview
+ */
+#overview .center{
+	background-color: #E0E0E0;
+	/*要設定*/
+	height:50px;				
+	border:1px solid black;
+}
+#overview_scale{
+	/* box上に重ねるため*/
+	float: left; 				
+}
+
+/*
+ *  region
+ */
+#region .center{
 	height: 50px;
 	background-color: InfoBackground;
 	border:1px solid black;
@@ -79,6 +92,9 @@ canvas.box{
 }
 
 
+/*
+ *  tab_menu
+ */
 #tab_menu ul{
 	list-style: none;
 }

@@ -47,7 +47,7 @@ GlobalSettings.prototype = {
 		//サーバーから必要なゲノム情報
 		this.START = 1;
 		this.MAX_LENGTH = 30000001; //30M
-		//this.MAX_LENGTH = 3722;
+		this.MAX_LENGTH = 3722;
 		//表示用に切りがいい数値に変換します。
 		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
 
@@ -174,14 +174,12 @@ var GS = new GlobalSettings();
 function _DEBUG(){
 
 	var txt = "";
-	left = $("#show_images").position().left;
-	txt += "; view.start:" + _Genome.get_view().start;
+	txt += "view.start:" + _Genome.get_view().start;
 	txt += "; view.stop:" + _Genome.get_view().stop;
 	txt += ";<br /> update_point.start:" + _Genome.get_imagelist().get_update_point().start;
 	txt += "; update_point.stop:" + _Genome.get_imagelist().get_update_point().stop;
 	txt += "; <br />point.start:" + _Genome.get_imagelist().point.start;
 	txt += "; point.stop:" + _Genome.get_imagelist().point.stop;
-
 	$("#debug").html(txt);
 }
 
@@ -561,7 +559,7 @@ Box.prototype = {
 				height:200,
 				fromCenter: false,
 			}
-			var node = $("#overview > canvas.box");
+			var node = $("#overview  canvas.box");
 			this.overview_box = new Box(node, rect, GS.START , GS.ROUND_MAX_LENGTH);
 			this.overview_box.draw();
 
@@ -689,7 +687,7 @@ Box.prototype = {
 		},
 
 		_update_overview: function(){
-			var node = $("#overview > canvas.box");
+			var node = $("#overview  canvas.box");
 			this.overview_box.set_x(this.view.start);
 			this.overview_box.set_width(this.layer);
 			this.overview_box.draw();
@@ -894,7 +892,7 @@ Box.prototype = {
 			 */
 			var flag = false;
 			var start_x;
-			var node = $("#overview > canvas.box");
+			var node = $("#overview  canvas.box");
 
 			/*
 			  boxをクリックした場合は
@@ -1209,7 +1207,7 @@ Box.prototype = {
 				fromCenter: false,
 			}
 
-			ctx = $("#region > canvas.box");
+			ctx = $("#region  canvas.box");
 			this.region_box = new Box(ctx ,rect , bothends.start, bothends.stop);
 			this.region_box.draw();
 
@@ -1232,7 +1230,7 @@ window.onload = function(){
 			json = Utility.string2json(data);
 			//json.pathにはサーバーに保存された画像パスがあります。
 			GS.TRACK_NAME = json.path;
-
+			
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1501, 100, GS.TRACK_NAME);
 
