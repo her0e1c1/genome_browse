@@ -157,20 +157,7 @@ GlobalSettings.prototype = {
 	change_layervalue4show: function(){
 
 	},
-	
 };
-
-function _DEBUG(){
-
-	var txt = "";
-	txt += "view.start:" + _Genome.get_view().start;
-	txt += "; view.stop:" + _Genome.get_view().stop;
-	txt += ";<br /> update_point.start:" + _Genome.get_imagelist().get_update_point().start;
-	txt += "; update_point.stop:" + _Genome.get_imagelist().get_update_point().stop;
-	txt += "; <br />point.start:" + _Genome.get_imagelist().point.start;
-	txt += "; point.stop:" + _Genome.get_imagelist().point.stop;
-	$("#debug").html(txt);
-}
 
 
 //private class
@@ -1206,6 +1193,19 @@ Box.prototype = {
 }(window));
 
 
+function _DEBUG(){
+
+	var txt = "";
+	txt += "view.start:" + _Genome.get_view().start;
+	txt += "; view.stop:" + _Genome.get_view().stop;
+	txt += ";<br /> update_point.start:" + _Genome.get_imagelist().get_update_point().start;
+	txt += "; update_point.stop:" + _Genome.get_imagelist().get_update_point().stop;
+	txt += "; <br />point.start:" + _Genome.get_imagelist().point.start;
+	txt += "; point.stop:" + _Genome.get_imagelist().point.stop;
+	$("#debug").html(txt);
+}
+
+
 //global settings
 var _Genome;
 var Utility = new Utility();
@@ -1227,8 +1227,10 @@ window.onload = function(){
 			$("#page_title").text("name" + _Genome.view.start)
 		})
 	}
-var minus = GS.PATH.images + "browser/minus.png"
-$("img.minus")
+
+	/* クリックするとその周辺を表示、非表示にします。 */
+	var minus = GS.PATH.images + "browser/minus.png"
+	$("img.minus")
 		.attr("src", minus)
 		.click(function(){
 			var c = $(this).parent().parent().children(".center");
@@ -1255,7 +1257,6 @@ $("img.minus")
 			main.hide();
 		}
 	});
-
 
 };
 

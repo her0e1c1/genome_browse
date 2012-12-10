@@ -86,6 +86,9 @@ canvas.box{
 /*
  *  region
  */
+#region{
+	clear: both;
+}
 #region .center{
 	height: 50px;
 	background-color: InfoBackground;
@@ -109,4 +112,9 @@ canvas.box{
 }
 #tab_menu li:hover{
 	background-color: #EDED33;
+}
+
+hr.dummy{
+	/* floatの影響を消します。*/
+	clear: both;
 }
