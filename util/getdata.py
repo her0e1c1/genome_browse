@@ -11,59 +11,34 @@ from BeautifulSoup import BeautifulSoup
 
 
 """
-GBrowseの場合
-8000px程度の画像であれば問題なく取得可能です。
-(start, stop, width) = (1001, 2000, 8000)
-のリクエストをした場合
-3倍の情報量
-(start, stop, width) = (1, 3000, 24000)
-が返ってきます。
+GBrowseの設定ファイルの修正箇所
 
-これを30等分すれば、
-800px辺り、100塩基の画像データが得られます。
+()の値は修正前です。
+わかりやすく単位をつけて書いています。
 
-以上より
-
-(start, stop, width) = (1001, 2000, 8000)
-(start, stop, width) = (4001, 5000, 8000)
-(start, stop, width) = (7001, 8000, 8000)
-とリクエストしていけば、
-(1から約maxまでの画像データを取得できます。)
-
-ただし、画像の両端余白を0にするために細工が必要です。
-
-また、readの場合はデータを取得するのに時間がかかるので
-プロセスがkillされるのを防ぎます。
-
-修正箇所
 /etc/gbrowse2/thaliana.conf
-region segment = 10000 => 1000000000 (1G)
+region segment = 1G(10000)
 
 /etc/gbrowse2/GBrowse.conf
-#Performance settings
-#変な値が入るとエラーでます。
-renderfarm = 1
-slave_timeout = 45 => 1000
-global_timeout = 60 => 1000
+slave_timeout = 1000(45)
+global_timeout = 1000(60)
 
-#Limits on genomic regions
-region segment 200000 => 1G
-max segment 5000000 => 1G
+pad_left = 0(50)
+pad_right = 0(50)
 
-追加個所
-pad_left = 0
-pad_right = 0
+region segment  1G(200000)
+max segment 1G(5000000)
 
 /etc/apache2/conf.d/gbrowse2.conf
-TimeOut 10000追加
+TimeOut 10000(追加)
+
+CachedTrack.pm
+DEFAULT_REQUEST_TIME => 60*60(60);
 
 
-出来た画像
-read 1M 8000px
-
+fist loginで失敗した場合はメモリのエラーの可能性があります。
 """
 
-#分割した画像データ
 class GraphicData:
 
     def __init__(self,track, path, start, stop):
@@ -82,7 +57,7 @@ class GetGBrowseData:
         """
         辞書データを受け取って初期化します。
         """
-        self._debug = True
+        self._debug = conf["debug"]
         url = urlparse.urljoin(conf["host"], conf["path"])
         self._url = url
         self._host = conf["host"]
@@ -96,6 +71,7 @@ class GetGBrowseData:
         self._seq_id = conf["seq_id"]
         self._tracks = conf["tracks"]
         self._image_max_width = conf["image_max_width"]
+        self._eacc_image_width = conf["each_image_width"]
 
         #datasourceのディレクトリ
         dir = os.path.join(self._save_root, self._datasource)
@@ -136,13 +112,15 @@ class GetGBrowseData:
     #ここから呼び出します。
     def get_image(self, start, stop):
         #first loginはinitで呼ぶと通信が上手くいきません。
-        self._first_login()
         res = self._post_from_to_genome(start, stop)
-        self._scale_path = self._get_scale(res)
         res = self._post_to_get_imagepath()
         paths = self._parse_to_get_imagepath(res)
 
         for (track, path) in paths.items():
+            #他の画像が得られた場合はやり直します。
+            if path.find("grey.png") != -1:
+                self.get_image(start, stop)
+
             self._save_image(GraphicData(track, path, start, stop))
 
 
@@ -185,9 +163,19 @@ class GetGBrowseData:
         res = self.get(url=url)
 
         #データの保存をします。
+        rate = self._image_max_width / self._eacc_image_width 
+        layer = gd.stop - gd.start + 1
+        start = gd.__dict__["start"] - layer
+        layer = layer / rate
         dir = self._track_dirs[gd.track]
-        name = "{0[track]}_{0[start]}_{0[stop]}_{1}.png"
-        name = name.format(gd.__dict__,self._image_max_width)
+
+        name = "{0}.png"
+        name = name.format(start)
+
+        #layerのディレクトリを作成します。
+        dir = os.path.join(dir, str(layer))
+        if not os.path.isdir(dir):
+            os.mkdir(dir)
 
         file = os.path.join(dir, name)
         f = open(file, "wb")
@@ -196,19 +184,7 @@ class GetGBrowseData:
 
         if self._debug: print("save:{0}".format(name))
 
-        #scaleも同時に作成します。
-        name = "scale_{0[start]}_{0[stop]}_{1}.png"
-        name = name.format(gd.__dict__,self._image_max_width)
-        url = urlparse.urljoin(self._host, self._scale_path)
-        res = self.get(url=url)
-
-        # file = os.path.join(dir, name)
-        # f = open(file, "wb")
-        # f.write(res.content)
-        # f.close()
-
-        if self._debug: print("save:{0}".format(name))
-
+        #さらにrate * 3で分割します。
 
 
     def _post_to_get_imagepath(self):
@@ -270,14 +246,8 @@ class GetGBrowseData:
                     pass
 
         print("get url:", paths)
-
-
         return paths
 
-    def _get_scale(self, res):
-        soup = BeautifulSoup(res.content)
-        src = soup.find("img",{"id":"Detail Scale_image"}).get("src")
-        return src
 
     def _first_login(self):
         """
@@ -345,7 +315,6 @@ class GetGBrowseData:
         if self._debug: print("config success!")
 
 
-
 """
 予めデータを取得するための設定事項を書きます。
 分割するのに必要なデータとは分けて書きます。
@@ -375,7 +344,7 @@ CONF = {
     #"image_max_width": 10 * (10 ** 3),  # 10k
     "image_max_width": 800,  # 10k
 
-    "image_width" : 800,
+    "each_image_width" : 800,
 
     #apacheの認証に必要です。
     "user": "ishii",
@@ -391,9 +360,42 @@ CONF = {
     #分割したときの一枚の画像に収まる塩基数
     "layer": 100,
     "start": 1,
+    "debug": True,
 }
 
+#GetGBroseDataのクラスを代入します。
+GGD = None
+
+def get_layer(start, stop, layer):
+    """
+    1からmax_lengthまでの画像を取得します。
+    GBrowseの関係上
+    layerの3倍の範囲を取り出します。
+
+    layer=100の場合
+    (101,200), (301, 400), ..., (x, x + 299)
+    stopを含んだ所まで実行します。
+    ただし、 x < stop < x + 300
+
+    """
+
+    global GGD
+
+    #実際のリクエストのstartは101等になります。
+    if start <= layer:
+        start = layer + 1
+
+    rate = 1
+
+    #1から取り出せるように調節します。
+    start = start - (start % layer) + 1
+    for st in range(start, stop, layer * rate * 3):
+        GGD.get_image(st, st + layer - 1)
+
+
 def main():
+
+    global GGD
 
     usage = \
 """
@@ -405,17 +407,17 @@ def main():
     p = argparse.ArgumentParser(usage=usage)
     p.add_argument("start")
     p.add_argument("stop")
-    p.add_argument("width")
     p.add_argument("passwd")
     args = p.parse_args()
     CONF["passwd"] = args.passwd
     start = int(args.start)
     stop = int(args.stop)
-    width = int(args.width)
-    CONF["image_max_width"] = width
-    ggd = GetGBrowseData(CONF)
 
-    ggd.get_image(start, stop)
+    #CONF["image_max_width"] = width
+
+    ggd = GetGBrowseData(CONF)
+    ggd._first_login()
+    GGD = ggd
 
 if __name__ == "__main__":
     #計測時間
