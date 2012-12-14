@@ -14,7 +14,7 @@ from BeautifulSoup import BeautifulSoup
 GBrowseの設定ファイルの修正箇所
 
 ()の値は修正前です。
-わかりやすく単位をつけて書いています。
+わかりやすく単位をつけた状態で書いています。
 
 /etc/gbrowse2/thaliana.conf
 region segment = 1G(10000)
@@ -38,6 +38,71 @@ DEFAULT_REQUEST_TIME => 60*60(60);
 
 fist loginで失敗した場合はメモリのエラーの可能性があります。
 """
+
+#global settings
+
+"""
+予めデータを取得するための設定事項を書きます。
+分割するのに必要なデータとは分けて書きます。
+
+保存パスの命名は
+database/seq_id/track
+とします。
+"""
+
+#画像を取得するトラックを指定します。
+tracks = [
+    "Ahal_200_L1_CoverageXyplot",
+    "Ahal_200_L1_Reads",
+]
+
+CONF = {
+
+    #アクセスするurlです。
+    "host": "http://gbrowse.seselab.org",
+
+    #リクエストをPOSTするパスです。
+    #url = host + path
+    "path": "/gb2/gbrowse/thaliana",
+
+    #最大長は手動で設定します。
+    #"max_length":  30 * (10 ** 6),  # 30M
+    "max_length":  1 * (10 ** 6),  # 1M
+
+    #変更不可
+    "image_max_width": 8000,
+    "each_image_width" : 800,
+
+    #apacheの認証に必要です。
+    "user": "ishii",
+
+    #パスワードは直接ファイルに書き込まず、引数で指定します。
+    #"passwd": getpass.getpass("Password:"),
+
+    #保存先
+    #save_root/datasource/seq_id/tracks/layer/start.png
+    "save_root": "data",
+    "datasource": "thaliana",
+    "seq_id": "Chr1",
+    "tracks": tracks,
+
+    #分割したときの一枚の画像に収まる塩基数です。
+    "layer": [100, 
+              200, 
+              1000,
+              2000,
+              5000,
+              10000,
+              20000,
+              50000,
+              1000000,
+              2000000,
+              5000000,
+              10000000],
+    "start": 1,
+    "debug": True,
+}
+
 
 class GraphicData:
 
@@ -71,7 +136,7 @@ class GetGBrowseData:
         self._seq_id = conf["seq_id"]
         self._tracks = conf["tracks"]
         self._image_max_width = conf["image_max_width"]
-        self._eacc_image_width = conf["each_image_width"]
+        self._each_image_width = conf["each_image_width"]
 
         #datasourceのディレクトリ
         dir = os.path.join(self._save_root, self._datasource)
@@ -108,6 +173,8 @@ class GetGBrowseData:
         if self._debug: print(url,  p)
         return requests.post(url,p, auth=self._auth, cookies=self._cookies)
 
+    def get_rate(self):
+        return self._image_max_width / self._each_image_width
 
     #ここから呼び出します。
     def get_image(self, start, stop):
@@ -120,8 +187,8 @@ class GetGBrowseData:
             #他の画像が得られた場合はやり直します。
             if path.find("grey.png") != -1:
                 self.get_image(start, stop)
-
-            self._save_image(GraphicData(track, path, start, stop))
+            else: 
+                self._save_image(GraphicData(track, path, start, stop))
 
 
     #serverへpostする関数
@@ -163,13 +230,14 @@ class GetGBrowseData:
         res = self.get(url=url)
 
         #データの保存をします。
-        rate = self._image_max_width / self._eacc_image_width 
+        rate = self.get_rate()
         layer = gd.stop - gd.start + 1
         start = gd.__dict__["start"] - layer
         layer = layer / rate
         dir = self._track_dirs[gd.track]
 
-        name = "{0}.png"
+        #分割前のファイルを残しておきます。
+        name = "_{0}.png"
         name = name.format(start)
 
         #layerのディレクトリを作成します。
@@ -185,7 +253,39 @@ class GetGBrowseData:
         if self._debug: print("save:{0}".format(name))
 
         #さらにrate * 3で分割します。
+        self._split_image(file, rate * 3, layer)
 
+    def _split_image(self, filename, number, layer):
+        """
+        受け取る画像のパスは、_1.png, _401.pngを期待します。
+        使われている数値がstartになります。
+        参照できるように_をつけています。
+        """
+        
+        base = os.path.basename(filename)
+        dir = os.path.dirname(filename)
+        start, ext = os.path.splitext(base)
+        start = int(start[1:])
+
+        for i in range(number):
+            cmd = "convert -crop {width}x0+{offset_x}+0 {input} {output}"
+            offset_x = self._each_image_width * i
+            #import ipdb;ipdb.set_trace()
+            output = "{start}{ext}".format(
+                start=(start + layer * i),
+                ext=ext,
+                )
+            output = os.path.join(dir, output)
+            cmd = cmd.format(
+                width=self._each_image_width,
+                offset_x=offset_x,
+                input=filename,
+                output=output
+                )
+
+            if self._debug: print(cmd)
+            os.system(cmd)
+            
 
     def _post_to_get_imagepath(self):
         """
@@ -202,7 +302,7 @@ class GetGBrowseData:
 
         post = {
             "action" : "navigate",
-            "navigate" : "left%200",
+            "navigate" : "left 0",
             "view_start" :"NaN",
             "view_stop":"NaN:",
             "snapshot" : "false",
@@ -249,7 +349,7 @@ class GetGBrowseData:
         return paths
 
 
-    def _first_login(self):
+    def first_login(self):
         """
         ログイン出来るか調べます。
         また、一回目のアクセスでsession用のクッキーを取り出します。
@@ -315,53 +415,13 @@ class GetGBrowseData:
         if self._debug: print("config success!")
 
 
-"""
-予めデータを取得するための設定事項を書きます。
-分割するのに必要なデータとは分けて書きます。
-
-保存パスの命名は
-database/seq_id/track
-とします。
-"""
 
 #保存先のrootディレクトリ名です。
-dir = os.path.join(os.getcwd(), "data")
+CONF["save_root"] = os.path.expanduser(CONF["save_root"])
+dir = os.path.join(os.getcwd(), CONF["save_root"])
 if not os.path.isdir(dir):
     os.mkdir(dir)
 
-tracks = [
-#"Ahal_200_L1_CoverageXyplot"
-          "Ahal_200_L1_Reads"
-]
-CONF = {
-
-    #アクセスするurlです。
-    "host": "http://gbrowse.seselab.org",
-    "path": "/gb2/gbrowse/thaliana",
-    "max_length":  300 * (10 ** 6),  # 30M
-
-    # 一枚の画像サイズは極力大きくします。
-    #"image_max_width": 10 * (10 ** 3),  # 10k
-    "image_max_width": 800,  # 10k
-
-    "each_image_width" : 800,
-
-    #apacheの認証に必要です。
-    "user": "ishii",
-#    "passwd": getpass.getpass("Password:"),
-#    "user": getpass.getpass("User:"),
-
-    #保存先
-    #save_root/datasource/seq_id/tracks/layer/start.png
-    "save_root": dir,
-    "datasource": "thaliana",
-    "seq_id": "Chr1",
-    "tracks": tracks,
-    #分割したときの一枚の画像に収まる塩基数
-    "layer": 100,
-    "start": 1,
-    "debug": True,
-}
 
 #GetGBroseDataのクラスを代入します。
 GGD = None
@@ -373,7 +433,7 @@ def get_layer(start, stop, layer):
     layerの3倍の範囲を取り出します。
 
     layer=100の場合
-    (101,200), (301, 400), ..., (x, x + 299)
+    (101,200), (401, 500), ..., (x, x + 299)
     stopを含んだ所まで実行します。
     ただし、 x < stop < x + 300
 
@@ -385,13 +445,27 @@ def get_layer(start, stop, layer):
     if start <= layer:
         start = layer + 1
 
-    rate = 1
-
+    rate = GGD.get_rate()
+    #import ipdb; ipdb.set_trace()
     #1から取り出せるように調節します。
-    start = start - (start % layer) + 1
-    for st in range(start, stop, layer * rate * 3):
-        GGD.get_image(st, st + layer - 1)
+    start = start - (start % layer)
 
+    
+    start = start * rate + 1
+    for st in range(start , stop, layer * rate * 3):
+        #1pxずれることは仕方ないものとします。
+        #本来は- 1します。
+        GGD.get_image(st, st + layer * rate - 1)
+
+
+def get_width(layer):
+    """
+    layerに対する一枚当りの画像の大きさを指定します。
+    """
+    if(layer <= 10 ** 3):
+        return 8000
+    else:
+        return 800
 
 def main():
 
@@ -405,19 +479,23 @@ def main():
 各引数には、数値を指定してください。
 """
     p = argparse.ArgumentParser(usage=usage)
-    p.add_argument("start")
-    p.add_argument("stop")
+    #p.add_argument("start")
+    #p.add_argument("stop")
     p.add_argument("passwd")
     args = p.parse_args()
     CONF["passwd"] = args.passwd
-    start = int(args.start)
-    stop = int(args.stop)
+    #start = int(args.start)
+    #stop = int(args.stop)
+    #get_layer(1,10000, 100)
 
-    #CONF["image_max_width"] = width
-
-    ggd = GetGBrowseData(CONF)
-    ggd._first_login()
-    GGD = ggd
+    for layer in CONF["layer"]:
+        w = get_width(layer)
+        CONF["image_max_width"] = w
+        ggd = GetGBrowseData(CONF)
+        ggd.first_login()
+        GGD = ggd
+        get_layer(1, CONF["max_length"], layer)
+ 
 
 if __name__ == "__main__":
     #計測時間
