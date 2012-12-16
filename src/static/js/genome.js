@@ -24,7 +24,8 @@ GlobalSettings.prototype = {
 		this.IMAGE_NUMBER = 5;
 
 		//リージョンに表示する範囲です(layer * 数値)
-		this.REGION_NUMBER = 9;
+		//計算しやすい様に奇数です。
+		this.REGION_NUMBER = 11;
 
 		this.PATH = {images: "/static/images/"};
 
@@ -66,6 +67,8 @@ GlobalSettings.prototype = {
 
 		//css関連
 		this.OVERVIEW_HEIGHT = 50;
+		this.REGION_HEIGHT = 50;
+
 	},
 
 	/*
@@ -630,7 +633,7 @@ Box.prototype = {
 			
 			//htmlの描画
 			this._update_overview();
-			this._update_region(this.view.start, this.layer, 9);
+			this._update_region(this.view.start, this.layer, GS.REGION_NUMBER);
 			/*
 			  条件に合致したらimagelistを書き換えます。
 			  (IMAGE_NUMBER) - 1 / 2回
@@ -1048,6 +1051,8 @@ Box.prototype = {
 
 		_init_html: function(){
 			$("#wrap_show_images").css("width", GS.IMAGE_WIDTH);
+			$("#overview").css("height", GS.OVERVIEW_HEIGHT);
+			$("#region").css("height", GS.REGION_HEIGHT);
 		},
 
 		_init_set_options: function(){
@@ -1147,7 +1152,7 @@ Box.prototype = {
 				fillStyle: "#ffffcc",
 				x:0, y:0,
 				width: GS.IMAGE_WIDTH,
-				height: GS.OVERVIEW_HEIGHT,
+				height: GS.REGION_HEIGHT,
 				fromCenter: false
 			}
 
@@ -1167,6 +1172,8 @@ Box.prototype = {
 
 			//最も大きくて、割り切れる、プロットする点
 			var last = bothends.stop - (bothends.stop % layer);
+
+			//todo: yの値はREGION_HEIGHTから参照させます。
 
 			//メモリの描写もします。
 			var text = {
@@ -1202,7 +1209,7 @@ Box.prototype = {
 				fillStyle: "pink",
 				x: start, y:0,
 				width: layer,
-				height:200,
+				height:GS.REGION_HEIGHT,
 				fromCenter: false,
 			}
 
