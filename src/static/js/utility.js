@@ -131,10 +131,10 @@ Utility.prototype = {
 		first = start - layer * (size - 1) / 2;
 		last = start + layer * (size - 1) / 2;
 
-		if(first <= 0 ){
-			first = 1;
-			last = 1 + layer * (size - 1);
-		}
+		// if(first <= 0 ){
+		// 	first = 1;
+		// 	last = 1 + layer * (size - 1);
+		// }
 
 		var ret = [];
 		for(var st = first; st <= last; st += layer){

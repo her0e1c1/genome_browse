@@ -33,12 +33,12 @@ GlobalSettings.prototype = {
 		this.SCROLL_WIGHT = 0.001;
 
 		//overviewをスクロールした場合
-		//this.SCROLL_OVERVIEW = -0.01;
+		//this.SCROLL_REGION = 0.001;
 
 		//サーバーから必要なゲノム情報
 		this.START = 1;
 		this.MAX_LENGTH = 30000001; //30M
-		this.MAX_LENGTH = 3722;
+		this.MAX_LENGTH = 37220;
 		//表示用に切りがいい数値に変換します。
 		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
 
@@ -739,7 +739,7 @@ Box.prototype = {
 				self._update_click_button(+1, 1);
 			});
 
-			plus.click(function(){
+			minus.click(function(){
 				var index = GS.get_index_of_layer(self.layer);
 				index++;
 				if(GS.LAYER_VALUES.length > index){
@@ -752,7 +752,7 @@ Box.prototype = {
 					self.first_show(start, new_layer, self.name);
 				}
 			});
-			minus.click(function(){
+			plus.click(function(){
 				var index = GS.get_index_of_layer(self.layer);
 				index--;
 				if(0 <= index){
@@ -960,12 +960,13 @@ Box.prototype = {
 			  boxごと動かすドラッグイベントを発生させます。
 			 */
 			var flag_drag = false;
-
+			var first_start;
 			node.mousedown(function(event){
 				//イベントの初期化
 				flag = true;
 				start_x = event.offsetX;
 				$(this).clearCanvas();
+				first_start = self.view.start;
 				bothends = Utility.get_side_point(
 					self.view.start,
 					self.layer,
@@ -982,11 +983,10 @@ Box.prototype = {
 					if (flag_drag){
 						/* ドラッグは背景を動かさないといけない */
 						var start =GS.change_image2dna(
-							event.offsetX,
-							bothends.start,
+							//ドラッグと同じ方向に動かします。
+							-(event.offsetX - start_x),
+							first_start,
 							length);
-						//boxの真ん中を動くようにします。
-						start -= self.layer / 2;
 						self.first_show(start, self.layer, self.name);
 					}
 					else{
@@ -1073,6 +1073,17 @@ Box.prototype = {
 			var color = "#000";
 			var ctx = $("#overview_scale");
 
+			//背景を描写します。
+			var background = {
+				fillStyle: "#E0E0E0",
+				x:0, y:0,
+				width: GS.IMAGE_WIDTH,
+				height: GS.OVERVIEW_HEIGHT,
+				fromCenter: false
+			}
+
+			ctx.drawRect(background);
+
 			var vertical_line = {
 				fillStyle: color,
 				x: 0, y: 23,
@@ -1130,6 +1141,18 @@ Box.prototype = {
 			var stop = start + layer - 1;
 
 			ctx.clearCanvas();
+
+			//背景を描写します。
+			var background = {
+				fillStyle: "#ffffcc",
+				x:0, y:0,
+				width: GS.IMAGE_WIDTH,
+				height: GS.OVERVIEW_HEIGHT,
+				fromCenter: false
+			}
+
+			ctx.drawRect(background);
+
 			var vertical_line = {
 				fillStyle: color,
 				x: 0, y: 23,
@@ -1210,7 +1233,7 @@ function _DEBUG(){
 }
 
 
-//global settings
+//global variables
 var _Genome;
 var Utility = new Utility();
 var GS = new GlobalSettings();

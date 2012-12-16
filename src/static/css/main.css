@@ -65,6 +65,11 @@ body{
 	font-weight: bold;
 }
 
+#overview canvas,
+#region canvas{
+	border:1px solid black;
+}
+
 canvas.box{
 	position:relative;
 	opacity:0.5;
@@ -73,12 +78,7 @@ canvas.box{
 /*
  *  overview
  */
-#overview .center{
-	background-color: #E0E0E0;
-	/*要設定*/
-	height:50px;
-	border:1px solid black;
-}
+
 #overview_scale{
 	/* box上に重ねるため*/
 	float: left;
@@ -87,11 +87,6 @@ canvas.box{
 /*
  *  region
  */
-#region .center{
-	height: 50px;
-	background-color: InfoBackground;
-	border:1px solid black;
-}
 #region_scale{
 	float: left;
 }
