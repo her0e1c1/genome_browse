@@ -17,7 +17,7 @@ body{
 	background-color:khaki;
 }
 
-#main{
+#main, #select_tracks, #preferences{
 	width:100%;
 	clear:both;
 	background-color: beige;

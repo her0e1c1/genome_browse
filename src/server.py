@@ -23,12 +23,14 @@ def index():
 
 
 """
+一番はじめのアクセスでajax通信させます。
+その際に、サーバーのデータ情報をクライアントに渡します。
 
-ds["thaliana"]["chr1"]["Ahal_read"]を評価すると
+path["thaliana"]["chr1"]["Ahal_read"]を評価すると
 "/thaliana/chr1/ahal/"というパスを返します。
 
+他の余分なファイルが混ざらないように、チェックをきちんと行います。
 """
-
 
 @app.route("/get_imagepath", methods=["GET"])
 def get_image():
@@ -36,6 +38,8 @@ def get_image():
     クライアントから、どのデータが読み込めるか
     一度だけリクエストします。
     """
+    #path
+    r_path = {}
     #tracks
     r_tracks = {}
     #seq_id
@@ -55,16 +59,20 @@ def get_image():
         for id in ids:
             id_dir = os.path.join(d_dir, id)
             tracks = os.listdir(id_dir)
+            r_tracks[d] = {}
+            r_tracks[d][id] = tracks
             for track in tracks:
                 track_dir = os.path.join(id_dir, track)
-                r_tracks[d] = {}
-                r_tracks[d][id] = {}
-                r_tracks[d][id][track] = track_dir
+                #他にいい方法が思いつきませんでした。
+                r_path[d] = {}
+                r_path[d][id] = {}
+                r_path[d][id][track] = track_dir
 
     data = {
         "datasources": r_ds,
         "seq_ids": r_seq_id,
-        "tracks": r_tracks
+        "tracks": r_tracks,
+        "path": r_path
         }
     print(data)
     return json.dumps(data)

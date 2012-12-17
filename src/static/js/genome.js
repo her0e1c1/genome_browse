@@ -1365,25 +1365,33 @@ window.onload = function(){
 			//json.pathにはサーバーに保存された画像パスがあります。
 			//GS.TRACK_NAME = json.path;
 
-			/* start layer nameを指定します。 */
-			_Genome = new genome(1501, 100, GS.TRACK_NAME);
 
-			$("#page_title").text("name" + _Genome.view.start)
+			//$("#page_title").text("name" + _Genome.view.start)
 
 			//datasourceの設定です。
 			var ds = json.datasources;
 			_set_select($("#datasources"), ds, ds);
 
-			var ids = json.seq_ids[ds];
+			var ids = json.seq_ids[ds[0]];
 			_set_select($("#seq_ids"), ids, ids);
 
-			//seq_idの設定です。
-			//datasourceが変更されれば、それに応じて変更します。
-			// for(var i = 0; i < seq_ids.length; i++){
-			// 	node.append("<option />");
-			// 	var id = seq_ids[i];
-			// 	var child = node.children(":last");
-			// }
+			var tracks = json.tracks[ds[0]][ids[0]];
+			var node = $("#select_tracks_form");
+			for(var i = 0; i < tracks.length; i++){
+				var str = "<input type='checkbox'/><label></label>"
+				node.append(str);
+				var child = node.children(":last");
+				var p = json.path[ds[0]][ids[0]][tracks[i]];
+				child.attr("value", p);
+				child.text(tracks[i]);
+			}
+
+			var path =  json.path[ds[0]][ids[0]][tracks[0]];
+			
+			/* start layer nameを指定します。 */
+			_Genome = new genome(1, 100, [path]);
+
+			$(".other_main").hide();
 		})
 	}
 
@@ -1401,6 +1409,9 @@ window.onload = function(){
 		}
 	}
 
+	function _set_checkbox(node, value, text){
+		
+	}
 
 	/* クリックするとその周辺を表示、非表示にします。 */
 	var minus = GS.PATH.images + "browser/minus.png";
@@ -1422,13 +1433,17 @@ window.onload = function(){
 	$("#tab_menu > ul > li").click(function(event){
 		var self = $(this);
 		var main = $("#main");
+		var slct = $("#select_tracks");
+		var prfr = $("#preferences");
 
 		var text = self.text();
 		if(text === "Select Tracks"){
 			main.hide();
+			slct.slideDown();
 		}
 		else if (text === "Browser"){
 			main.slideDown();
+			slct.hide();
 		}
 		if(text === "Preferences"){
 			main.hide();
