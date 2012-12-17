@@ -11,6 +11,14 @@ GlobalSettings = function(){
 GlobalSettings.prototype = {
 	init: function(){
 
+		/*
+		  サーバーのデータ情報です。
+		  はじめの接続の際に設定します。
+		*/
+		this.datasources;
+		this.seq_ids;
+		this.tracks;
+
 		this.URL = document.URL;
 		/*
 		  一枚あたりの画像の幅
@@ -18,7 +26,7 @@ GlobalSettings.prototype = {
 		  この値は変更できません。
 		*/
 		this.IMAGE_WIDTH = 800;
-		this.IMAGE_HEIGHT = 100;
+		this.IMAGE_HEIGHT = 300;
 
 		//計算しやすい様に奇数です。
 		this.IMAGE_NUMBER = 5;
@@ -139,7 +147,7 @@ GlobalSettings.prototype = {
 		var MIN_LAYER = this.MIN_LAYER;
 		var option_values = new Array();
 		var children = $("#controller_select").children();
-		
+
 		//各optionの値を取り出します。
 		for(var i = 0; i < children.length; i++){
 			var v = parseInt(children.eq(i).val());
@@ -151,7 +159,7 @@ GlobalSettings.prototype = {
 				return prevalue;
 			}
 			prevalue = option_values[i];
-			
+
 		}
 		return prevalue;
 	},
@@ -623,7 +631,7 @@ Box.prototype = {
 		 */
 		update: function(){
 			var update_point = this.get_update_point();
-			
+
 			//最大を超えていたら最大に設定します。
 			var max = GS.get_max_start(this.layer);
 			if(this.view.start > max){
@@ -632,7 +640,7 @@ Box.prototype = {
 			if(this.view.start <= 0 ){
 				this.view.start = 1;
 			}
-			
+
 			//htmlの描画
 			this._update_overview();
 			this._update_region(this.view.start, this.layer, GS.REGION_NUMBER);
@@ -721,7 +729,7 @@ Box.prototype = {
 				ctx.drawText(text);
 			}
 
-			
+
 
 			last = sp - (st  % (layer / 100)) + 1;
 			for(var p = last; st < p; p -= (layer / 100)){
@@ -730,7 +738,7 @@ Box.prototype = {
 				ctx.drawRect(vertical_line);
 			}
 
-			
+
 
 		},
 
@@ -1086,12 +1094,12 @@ Box.prototype = {
 							event.offsetX,
 							bothends.start,
 							length);
-							
+
 						var x2 = GS.change_image2dna(
 							start_x,
 							bothends.start,
 							length);
-							
+
 						var zoom = x1 - x2;
 						if(zoom < 0)
 							zoom = -zoom;
@@ -1266,7 +1274,7 @@ Box.prototype = {
 				height: 4,
 				fromCenter: false,
 			}
-			
+
 			//描写する両端のメモリの値
 			var bothends = Utility.get_side_point(start, layer, size);
 			var DNAlength = bothends.stop - bothends.start + 1;
@@ -1305,7 +1313,7 @@ Box.prototype = {
 				vertical_line.x = x;
 				ctx.drawRect(vertical_line);
 			}
-			
+
 			//region boxを描写します。
 			var rect = {
 				fillStyle: "pink",
@@ -1353,16 +1361,46 @@ window.onload = function(){
 	init();
 	function init(){
 		$.get(GS.URL + "/get_imagepath",{},function(data){
-			json = Utility.string2json(data);
+			var json = Utility.string2json(data);
 			//json.pathにはサーバーに保存された画像パスがあります。
 			//GS.TRACK_NAME = json.path;
-			
+
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1501, 100, GS.TRACK_NAME);
 
 			$("#page_title").text("name" + _Genome.view.start)
+
+			//datasourceの設定です。
+			var ds = json.datasources;
+			_set_select($("#datasources"), ds, ds);
+
+			var ids = json.seq_ids[ds];
+			_set_select($("#seq_ids"), ids, ids);
+
+			//seq_idの設定です。
+			//datasourceが変更されれば、それに応じて変更します。
+			// for(var i = 0; i < seq_ids.length; i++){
+			// 	node.append("<option />");
+			// 	var id = seq_ids[i];
+			// 	var child = node.children(":last");
+			// }
 		})
 	}
+
+
+	function _set_select(node, value, text){
+
+		if(value.length !== text.length)
+			throw "配列の数があっていません。";
+
+		for(var i = 0; i < value.length; i++){
+			node.append("<option />");
+			var child = node.children(":last");
+			child.attr("value", value[i]);
+			child.text(text[i])
+		}
+	}
+
 
 	/* クリックするとその周辺を表示、非表示にします。 */
 	var minus = GS.PATH.images + "browser/minus.png";
@@ -1391,7 +1429,7 @@ window.onload = function(){
 		}
 		else if (text === "Browser"){
 			main.slideDown();
-		}	
+		}
 		if(text === "Preferences"){
 			main.hide();
 		}
