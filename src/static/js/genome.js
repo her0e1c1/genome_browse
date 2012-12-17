@@ -65,10 +65,10 @@ GlobalSettings.prototype = {
 		//取得するデータ名
 		this.TRACK_NAME = ["sample"];
 
-		//css関連
+		//css関連(偶数条件付きです。)
 		this.OVERVIEW_HEIGHT = 50;
 		this.REGION_HEIGHT = 50;
-
+		this.DETAILS_SCALE_HEIGHT = 50;
 	},
 
 	/*
@@ -370,9 +370,8 @@ Box.prototype = {
 			//htmlの初期化
 			this._init_html();
 			this._init_set_options();
-			
-			//overview
 			this._init_overview();
+			this._init_details();
 
 			//event登録
 			this._event_controler_select();
@@ -503,17 +502,21 @@ Box.prototype = {
 				return;
 			}
 
-			if(start === undefined ||
-			   start <= 0 ){
-				start = 1;
-			}
-
 			//最大を超えていたら最大に設定します。
 			var max = GS.get_max_start(layer);
 			if(start > max){
 				start = max;
 			}
-			
+
+			/*
+			  maxがおかしな値を取る可能性がありますので、
+			  こちらが後評価です。
+			*/
+			if(start === undefined ||
+			   start <= 0 ){
+				start = 1;
+			}
+
 			var stop = this.get_view_stop(start);
 
 			if(layer === undefined){
@@ -543,11 +546,10 @@ Box.prototype = {
 			this.overview_box.draw();
 
 			/*
-			  regionの初期化をします。
+			  初期化した後もupdateします。
 			*/
 			this._update_region(start , layer, GS.REGION_NUMBER);
-
-
+			this._update_details(start, layer)
 
 			/*
 			  残像が残る可能性があります。
@@ -607,7 +609,8 @@ Box.prototype = {
 			this.show_info();
 		},
 		show_info: function(){
-			$("#input_view_start").val(this.view.start);
+			var start = Math.floor(this.view.start)
+			$("#input_view_start").val(start);
 		},
 
 		/*
@@ -617,23 +620,23 @@ Box.prototype = {
 
 		  ここでは既に次ぎに描写するstartやlayerが予め決まっています。
 
-		  todo: 最大長または１までしか表示できないようにします。
 		 */
 		update: function(){
 			var update_point = this.get_update_point();
 			
-			if(this.view.start <= 0 ){
-				this.view.start = 1;
-			}
 			//最大を超えていたら最大に設定します。
 			var max = GS.get_max_start(this.layer);
 			if(this.view.start > max){
 				this.view.start = max;
 			}
+			if(this.view.start <= 0 ){
+				this.view.start = 1;
+			}
 			
 			//htmlの描画
 			this._update_overview();
 			this._update_region(this.view.start, this.layer, GS.REGION_NUMBER);
+			this._update_details(this.view.start, this.layer);
 			/*
 			  条件に合致したらimagelistを書き換えます。
 			  (IMAGE_NUMBER) - 1 / 2回
@@ -670,6 +673,65 @@ Box.prototype = {
 			this.overview_box.set_x(this.view.start);
 			this.overview_box.set_width(this.layer);
 			this.overview_box.draw();
+		},
+
+		/*
+		  キャンバスは毎回書き換えるので背景だけ別表示はできません。
+		 */
+		_update_details: function(start, layer){
+			var ctx = $("#details_scale");
+			var color = "#000";
+			var height = 4;
+			var y = (GS.DETAILS_SCALE_HEIGHT - height / 2) / 2;
+
+			ctx.clearCanvas();
+
+			this._init_details();
+			var vertical_line = {
+				fillStyle: color,
+				x: 0, y: y,
+				width: 1,
+				height: height,
+				fromCenter: false,
+			}
+
+			var sp = start + layer - 1;
+			var st = start;
+			var layer = this.layer;
+			var DNAlength = sp - st + 1;
+
+			//メモリの描写もします。
+			var text = {
+				fillStyle: color,
+				strokeStyle: color,
+				strokeWidth:0.2,
+				x: 0, y: 20,
+				font: "9px Arial",
+				text: ""
+			}
+
+			last = sp - (st  % (layer / 10)) + 1;
+			for(var p = last; st < p; p -= (layer / 10)){
+				var x = GS.change_dna2image(p, st, DNAlength);
+				vertical_line.x = x;
+				ctx.drawRect(vertical_line);
+
+				text.text = p;
+				text.x = x;
+				ctx.drawText(text);
+			}
+
+			
+
+			last = sp - (st  % (layer / 100)) + 1;
+			for(var p = last; st < p; p -= (layer / 100)){
+				var x = GS.change_dna2image(p, st, DNAlength);
+				vertical_line.x = x;
+				ctx.drawRect(vertical_line);
+			}
+
+			
+
 		},
 
 		//eventハンドラー
@@ -803,20 +865,22 @@ Box.prototype = {
 		_event_scroll_show_images: function(){
 			var self = this;
 
+			/* 画像とメモリを同時にスクロールさせます。*/
+			var node = $("#show_images, #details_scale");
 			/* flagがtreuのときがドラッグイベント中です。 */
 			var flag = false;
 
 			//上下に動く必要はありませんのでxのみです。
 			var start_x;
 
-			$("#show_images").mousedown(function(event){
+			node.mousedown(function(event){
 				//初期化
 				flag = true;
 				start_x = event.clientX;
 				return false;
 			});
 
-			$("#show_images").mousemove(function(event){
+			node.mousemove(function(event){
 				var offset_x;
 				var WIGHT = GS.SCROLL_WIGHT;
 
@@ -829,17 +893,15 @@ Box.prototype = {
 					self.view.start -= offset_x;
 					start_x = event.clientX;
 					self.update();
-					console.log("offset " + offset_x);
 				}
 				return false;
 
 			});
 
-			$("#show_images")
-				.mouseup(function(){
-					flag = false;
-					self.update();
-				})
+			node.mouseup(function(){
+				flag = false;
+				self.update();
+			})
 				.mouseout(function(){
 					/*
 					  firefoxの場合
@@ -961,6 +1023,9 @@ Box.prototype = {
 			/*
 			  BOXをクリックした場合は
 			  boxごと動かすドラッグイベントを発生させます。
+
+			  todo: クリックの際にドラッグ判定されない様に、
+			  一定の幅はクリック判定とさせます。
 			 */
 			var flag_drag = false;
 			var first_start;
@@ -1049,10 +1114,30 @@ Box.prototype = {
 
 		//init
 
+		/*
+		  cssの初期化をします。
+		 */
 		_init_html: function(){
+			//.center
+			$(".center").css("width", GS.IMAGE_WIDTH);
 			$("#wrap_show_images").css("width", GS.IMAGE_WIDTH);
-			$("#overview").css("height", GS.OVERVIEW_HEIGHT);
-			$("#region").css("height", GS.REGION_HEIGHT);
+
+			//region
+			$("#region .center").css("height", GS.REGION_HEIGHT);
+			$("#region_scale").attr("height", GS.OVERVIEW_HEIGHT);
+
+			//overview
+			$("#overview .center").css("height", GS.OVERVIEW_HEIGHT);
+			$("#overview_scale").attr("width", GS.IMAGE_WIDTH);
+			$("#overview_scale").attr("height", GS.OVERVIEW_HEIGHT);
+
+			//canvas
+			$("canvas").attr("width", GS.IMAGE_WIDTH);
+			$("canvas").attr("height", GS.OVERVIEW_HEIGHT);
+			$("canvas.box").css("top", (- GS.OVERVIEW_HEIGHT) + "px");
+
+			//details
+
 		},
 
 		_init_set_options: function(){
@@ -1067,14 +1152,28 @@ Box.prototype = {
 		},
 
 		/*
-		  
+		  viewのメモリを刻みます。
+		  他のと比べて高さは小さくします。
+		 */
+		_init_details: function(){
+			var ctx = $("#details_scale");
+			//背景を描写します。
+			var background = {
+				fillStyle: "#ffe",
+				x:0, y:0,
+				width: GS.IMAGE_WIDTH,
+				height: GS.OVERVIEW_HEIGHT,
+				fromCenter: false
+			}
+
+			ctx.drawRect(background);
+
+		},
+
+		/*
+		  全長を表示するメモリを刻みます。
 		*/
 		_init_overview: function(){
-			$("#overview_scale").attr("width", GS.IMAGE_WIDTH);
-			$("#overview_scale").attr("height", GS.OVERVIEW_HEIGHT);
-			$("canvas").attr("width", GS.IMAGE_WIDTH);
-			$("canvas").attr("height", GS.OVERVIEW_HEIGHT);
-			$("canvas.box").css("top", (- GS.OVERVIEW_HEIGHT) + "px");
 			var color = "#000";
 			var ctx = $("#overview_scale");
 
@@ -1139,6 +1238,8 @@ Box.prototype = {
 		   メモリは割り切れる値を表示させます。
 
 		   viewの値が変わる毎に描写を書き換えていく必要があります。
+
+		   todo: initとupdateの役割を分けます。
 		*/
 		_update_region: function(start ,layer, size){
 			var color = "#000";
@@ -1166,6 +1267,7 @@ Box.prototype = {
 				fromCenter: false,
 			}
 			
+			//描写する両端のメモリの値
 			var bothends = Utility.get_side_point(start, layer, size);
 			var DNAlength = bothends.stop - bothends.start + 1;
 			var interval = Utility.get_interval(DNAlength);
@@ -1296,4 +1398,3 @@ window.onload = function(){
 	});
 
 };
-
