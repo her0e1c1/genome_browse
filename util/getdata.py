@@ -9,7 +9,11 @@ import getpass
 import requests
 from BeautifulSoup import BeautifulSoup
 
+"""
+requestsにはバグが混在しています。
+v0.14.2を使用します。
 
+"""
 """
 GBrowseの設定ファイルの修正箇所
 
@@ -39,7 +43,6 @@ DEFAULT_REQUEST_TIME => 60*60(60);
 fist loginで失敗した場合はメモリのエラーの可能性があります。
 """
 
-#global settings
 
 """
 予めデータを取得するための設定事項を書きます。
@@ -52,7 +55,7 @@ database/seq_id/track
 
 #画像を取得するトラックを指定します。
 tracks = [
-    "Ahal_200_L1_CoverageXyplot",
+#    "Ahal_200_L1_CoverageXyplot",
     "Ahal_200_L1_Reads",
 ]
 
@@ -70,14 +73,14 @@ CONF = {
     "max_length":  1 * (10 ** 4),  # 1M
 
     #変更不可
-    "image_max_width": 8000,
+    #"image_max_width": 8000,
     "each_image_width" : 800,
 
     #apacheの認証に必要です。
     "user": "ishii",
 
     #パスワードは直接ファイルに書き込まず、引数で指定します。
-    #"passwd": getpass.getpass("Password:"),
+    "passwd": getpass.getpass("Password:"),
 
     #保存先
     #save_root/datasource/seq_id/tracks/layer/start.png
@@ -87,8 +90,8 @@ CONF = {
     "tracks": tracks,
 
     #分割したときの一枚の画像に収まる塩基数です。
-    "layer": [100, 
-              200, 
+    "layer": [100,
+              200,
               1000,
               2000,
               5000,
@@ -157,6 +160,7 @@ class GetGBrowseData:
                 os.mkdir(dir)
 
         #ログインは完了させておきます。
+        #first loginはinitで呼ぶと通信が上手くいきません。
         #self._first_login()
 
     #requests.get/postのラッパー
@@ -171,14 +175,13 @@ class GetGBrowseData:
         if url is None:
             url = self._url
         if self._debug: print(url,  p)
-        return requests.post(url,p, auth=self._auth, cookies=self._cookies)
+        return requests.post(url, p, auth=self._auth, cookies=self._cookies)
 
     def get_rate(self):
         return self._image_max_width / self._each_image_width
 
     #ここから呼び出します。
     def get_image(self, start, stop):
-        #first loginはinitで呼ぶと通信が上手くいきません。
         res = self._post_from_to_genome(start, stop)
         res = self._post_to_get_imagepath()
         paths = self._parse_to_get_imagepath(res)
@@ -187,7 +190,7 @@ class GetGBrowseData:
             #他の画像が得られた場合はやり直します。
             if path.find("grey.png") != -1:
                 self.get_image(start, stop)
-            else: 
+            else:
                 self._save_image(GraphicData(track, path, start, stop))
 
 
@@ -197,7 +200,7 @@ class GetGBrowseData:
         どこからどこまでの塩基配列を受け取るのかを決めます。
 
         以下のような文字列を生成させてserverにpostします。
-        ch1:10,000..20,000
+        Chr1:10,000..20,000
         """
         name = "{seq_id}:{start}..{stop}".format(
             seq_id=self._seq_id,
@@ -210,7 +213,8 @@ class GetGBrowseData:
         post = {
             "name" : name,
             "force_submit" : 0,
-            "plugin_find" : 0
+            "plugin_find" : 0,
+            "Search": "Search"
             }
         res = self.post(p=post)
 
@@ -261,7 +265,7 @@ class GetGBrowseData:
         使われている数値がstartになります。
         参照できるように_をつけています。
         """
-        
+
         base = os.path.basename(filename)
         dir = os.path.dirname(filename)
         start, ext = os.path.splitext(base)
@@ -285,7 +289,7 @@ class GetGBrowseData:
 
             if self._debug: print(cmd)
             os.system(cmd)
-            
+
 
     def _post_to_get_imagepath(self):
         """
@@ -424,9 +428,8 @@ if not os.path.isdir(dir):
 
 
 #GetGBroseDataのクラスを代入します。
-GGD = None
 
-def get_layer(start, stop, layer):
+def get_layer(start, stop, layer, ggd=None):
     """
     1からmax_lengthまでの画像を取得します。
     GBrowseの関係上
@@ -438,24 +441,23 @@ def get_layer(start, stop, layer):
     ただし、 x < stop < x + 300
 
     """
-
-    global GGD
+    if ggd is None:
+        ggd = GetGBrowseData(CONF)
 
     #実際のリクエストのstartは101等になります。
     if start <= layer:
         start = layer + 1
 
-    rate = GGD.get_rate()
+    rate = ggd.get_rate()
     #import ipdb; ipdb.set_trace()
     #1から取り出せるように調節します。
     start = start - (start % layer)
 
-    
     start = start * rate + 1
     for st in range(start , stop, layer * rate * 3):
         #1pxずれることは仕方ないものとします。
         #本来は- 1します。
-        GGD.get_image(st, st + layer * rate - 1)
+        ggd.get_image(st, st + layer * rate - 1)
 
 
 def get_width(layer):
@@ -487,17 +489,15 @@ def main():
     #start = int(args.start)
     #stop = int(args.stop)
     #get_layer(1,10000, 100)
-    CONF["passwd"] = getpass.getpass("Password:")
-    
+    #CONF["passwd"] = getpass.getpass("Password:")
+
 
     for layer in CONF["layer"]:
         w = get_width(layer)
         CONF["image_max_width"] = w
         ggd = GetGBrowseData(CONF)
         ggd.first_login()
-        GGD = ggd
-        get_layer(CONF["start"], CONF["max_length"], layer)
- 
+        get_layer(CONF["start"], CONF["max_length"], layer, ggd)
 
 if __name__ == "__main__":
     #計測時間
