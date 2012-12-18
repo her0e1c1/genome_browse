@@ -5,7 +5,7 @@ import sys
 import urlparse
 import time
 import getpass
-import argparse
+#import argparse
 import requests
 from BeautifulSoup import BeautifulSoup
 
@@ -67,7 +67,7 @@ CONF = {
 
     #最大長は手動で設定します。
     #"max_length":  30 * (10 ** 6),  # 30M
-    "max_length":  1 * (10 ** 6),  # 1M
+    "max_length":  1 * (10 ** 4),  # 1M
 
     #変更不可
     "image_max_width": 8000,
@@ -478,15 +478,17 @@ def main():
 ./getdata.py start stop width
 各引数には、数値を指定してください。
 """
-    p = argparse.ArgumentParser(usage=usage)
+    #p = argparse.ArgumentParser(usage=usage)
     #p.add_argument("start")
     #p.add_argument("stop")
-    p.add_argument("passwd")
-    args = p.parse_args()
-    CONF["passwd"] = args.passwd
+    #p.add_argument("passwd")
+    #args = p.parse_args()
+    #CONF["passwd"] = args.passwd
     #start = int(args.start)
     #stop = int(args.stop)
     #get_layer(1,10000, 100)
+    CONF["passwd"] = getpass.getpass("Password:")
+    
 
     for layer in CONF["layer"]:
         w = get_width(layer)
@@ -494,7 +496,7 @@ def main():
         ggd = GetGBrowseData(CONF)
         ggd.first_login()
         GGD = ggd
-        get_layer(1, CONF["max_length"], layer)
+        get_layer(CONF["start"], CONF["max_length"], layer)
  
 
 if __name__ == "__main__":
