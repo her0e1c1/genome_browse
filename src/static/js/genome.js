@@ -28,7 +28,7 @@ GlobalSettings.prototype = {
 		this.IMAGE_WIDTH = 800;
 		this.IMAGE_HEIGHT = 300;
 
-		//計算しやすい様に奇数です。
+		//計算しやすい様に奇数です。(最低が5です。)
 		this.IMAGE_NUMBER = 5;
 
 		//リージョンに表示する範囲です(layer * 数値)
@@ -1360,13 +1360,12 @@ window.onload = function(){
 	setInterval(_DEBUG, 1000);
 	init();
 	function init(){
+		//はじめに表示するのは#mainだけです。
+		$(".other_main").hide();
+
 		$.get(GS.URL + "/get_imagepath",{},function(data){
 			var json = Utility.string2json(data);
 			//json.pathにはサーバーに保存された画像パスがあります。
-			//GS.TRACK_NAME = json.path;
-
-
-			//$("#page_title").text("name" + _Genome.view.start)
 
 			//datasourceの設定です。
 			var ds = json.datasources;
@@ -1386,12 +1385,27 @@ window.onload = function(){
 				child.text(tracks[i]);
 			}
 
+
+			/* checkbox */
+			$("#select_tracks input").change(function(){
+				var node = $("#select_tracks input:checked + label")
+				var name = [];
+				for(var i = 0; i < node.length; i++){
+					name.push(node.eq(i).val());
+				}
+
+				//新しく画像を指定し直します。
+				var start = _Genome.get_view().start;
+				var layer = _Genome.get_layer();
+				_Genome.init(start, layer, name);
+			});
+
+
+			//初期状態なので全て0番目のものを選びます。
 			var path =  json.path[ds[0]][ids[0]][tracks[0]];
-			
+			$("label[value='" + path +"'] + input").attr("checked","checked");
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1, 100, [path]);
-
-			$(".other_main").hide();
 		})
 	}
 
@@ -1412,6 +1426,8 @@ window.onload = function(){
 	function _set_checkbox(node, value, text){
 		
 	}
+
+
 
 	/* クリックするとその周辺を表示、非表示にします。 */
 	var minus = GS.PATH.images + "browser/minus.png";
@@ -1449,5 +1465,6 @@ window.onload = function(){
 			main.hide();
 		}
 	});
+
 
 };

@@ -32,47 +32,72 @@ path["thaliana"]["chr1"]["Ahal_read"]を評価すると
 他の余分なファイルが混ざらないように、チェックをきちんと行います。
 """
 
+
+def get_path(root,number):
+    """
+    再帰的にパスを取り出します。
+    探査するディレクトリとそこからの深さを指定します。
+    """
+    pre_dir = os.getcwd()
+    os.chdir(root)
+    if not root.startswith("/"):
+        root = os.getcwd()
+    #import ipdb; ipdb.set_trace()
+    def g(dir):
+        l = len(root)
+        if dir.startswith(root):
+            return dir[l+1:]
+        else:
+            return dir
+
+    def _(ret ,num):
+        if(num == 0):
+            return g(os.getcwd())
+        dirs = os.listdir("./")
+        dirs = [d for d in dirs if os.path.isdir(d)]
+        for dir in dirs:
+            os.chdir(dir)
+            ret[dir] = _({}, num-1)
+            os.chdir("..")
+        return ret
+
+    r =  _({}, number)
+    os.chdir(pre_dir)
+    return r
+
+
 @app.route("/get_imagepath", methods=["GET"])
 def get_image():
     """
     クライアントから、どのデータが読み込めるか
     一度だけリクエストします。
     """
-    #path
-    r_path = {}
-    #tracks
-    r_tracks = {}
-    #seq_id
-    r_seq_id = {}
-    #datasource
-    r_ds = os.listdir(CONF["images"])
-    
-    for i in CONF["ignore"]:
-        if i in r_ds:
-            r_ds.remove(i)
 
-    #pythonの木構造は読みにくいと思います。
-    for d in r_ds:
-        d_dir = os.path.join(CONF["images"], d)
-        ids = os.listdir(d_dir)
-        r_seq_id[d] = ids
+    path = get_path(CONF["images"], 3)
+    for i in CONF["ignore"]:
+        if i in path:
+            del path[i]
+
+    #datasource
+    ds = path.keys()
+
+    #seq_id
+    seq_ids = {}
+    for d in ds:
+        seq_ids[d] = path[d].keys()
+
+    #tracks
+    tracks = {}
+    for d, ids in seq_ids.items():
+        tracks[d] = {}
         for id in ids:
-            id_dir = os.path.join(d_dir, id)
-            tracks = os.listdir(id_dir)
-            r_tracks[d] = {}
-            r_tracks[d][id] = tracks
-            for track in tracks:
-                track_dir = os.path.join(id_dir, track)
-                #他にいい方法が思いつきませんでした。
-                r_path[d] = {}
-                r_path[d][id] = {}
-                r_path[d][id][track] = track_dir
+            tracks[d][id] = path[d][id].keys()
 
     data = {
-        "datasources": r_ds,
-        "seq_ids": r_seq_id,
-        "tracks": r_tracks,
-        "path": r_path
+        "datasources": ds,
+        "seq_ids": seq_ids,
+        "tracks": tracks,
+        "path": path
         }
     print(data)
     return json.dumps(data)
