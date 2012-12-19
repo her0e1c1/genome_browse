@@ -26,7 +26,7 @@ GlobalSettings.prototype = {
 		  この値は変更できません。
 		*/
 		this.IMAGE_WIDTH = 800;
-		this.IMAGE_HEIGHT = 300;
+		//this.IMAGE_HEIGHT = 300;
 
 		//計算しやすい様に奇数です。(最低が5です。)
 		this.IMAGE_NUMBER = 5;
@@ -585,7 +585,7 @@ Box.prototype = {
 			var len = this.imagelists.length;
 			//子供の要素を一度中身をリセットします。
 			n.empty();
-			n.css("height", GS.IMAGE_HEIGHT * len);
+			//n.css("height", GS.IMAGE_HEIGHT * len);
 			n.css("width", GS.IMAGE_WIDTH * GS.IMAGE_NUMBER);
 			for(var j = 0; j < len; j++){
 				n.append("<div></div>");
@@ -594,7 +594,7 @@ Box.prototype = {
 					child.append("<img />");
 					var grand_child = child.children(":last");
 					grand_child.attr("src", this.imagelists[j].images[i].src);
-					grand_child.css("height", GS.IMAGE_HEIGHT);
+					//grand_child.css("height", GS.IMAGE_HEIGHT);
 					grand_child.css("width", GS.IMAGE_WIDTH);
 
 				}

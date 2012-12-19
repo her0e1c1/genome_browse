@@ -37,6 +37,7 @@ body{
  float: left;
  position: relative;
  /* 初期値を先に代入 */
+ height: auto;
  top: 0px;
  left: 0px;
 }
