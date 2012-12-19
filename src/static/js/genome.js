@@ -1375,19 +1375,10 @@ window.onload = function(){
 			_set_select($("#datasources"), ds, ds);
 
 			var ids = json.seq_ids[ds[0]];
-			_set_select($("#seq_ids"), ids, ids);
+			update_seq_ids(ids);
 
-			var tracks = json.tracks[ds[0]][ids[0]];
-			var node = $("#select_tracks_form");
-			for(var i = 0; i < tracks.length; i++){
-				var str = "<input type='checkbox'/><label></label>"
-				node.append(str);
-				//todo: last-childを使います。
-				var child = node.children(":last");
-				var p = json.path[ds[0]][ids[0]][tracks[i]];
-				child.attr("value", p);
-				child.text(tracks[i]);
-			}
+			var tracks = GS.tracks[ds[0]][ids[0]]
+			update_tracks(ds[0], ids[0]);
 
 
 			/* checkbox */
@@ -1427,7 +1418,6 @@ window.onload = function(){
 		/* start layer nameを指定します。 */
 		_Genome.first_show(start, layer, name);
 		}
-
 		
 	}
 
@@ -1436,7 +1426,7 @@ window.onload = function(){
 
 		if(value.length !== text.length)
 			throw "配列の数があっていません。";
-
+		node.empty();
 		for(var i = 0; i < value.length; i++){
 			node.append("<option />");
 			var child = node.children(":last");
@@ -1485,5 +1475,58 @@ window.onload = function(){
 			main.hide();
 		}
 	});
+
+	
+	/* 一度セットしたら変更はありません。 */
+	$("#datasources").change(function(){
+		var ds = $("#datasources").val();
+		var ids = GS.seq_ids[ds];
+		update_tracks(ds, ids[0]);
+	});
+
+	function update_seq_ids(ids){
+		var node = $("#seq_ids");
+		_set_select(node, ids, ids);
+
+	/* datasourceが変更されるたびに実行します。*/
+		node.change(function(){
+			var id = node.val();
+			var ids = GS.seq_ids;
+			for(var i in ids){
+				for(var j in ids[i]){
+					if(ids[i][j] === id){
+						update_tracks(i, id);
+					}
+				}
+			}	
+		});
+
+
+
+	}
+
+	/*
+	  datesourceとseq_idsからselect tracksで表示するtrackを決めます。
+	 */
+	function update_tracks(ds, id){
+		var tracks = GS.tracks[ds][id];
+		var node = $("#select_tracks_form");
+		node.empty();
+		for(var i = 0; i < tracks.length; i++){
+			var str = "<input type='checkbox'/><label></label>"
+			node.append(str);
+			//todo: last-childを使います。
+			var child = node.children(":last");
+			var p = GS.path[ds][id][tracks[i]];
+			child.attr("value", p);
+			child.text(tracks[i]);
+		}
+
+		update_seq_ids(GS.seq_ids[ds]);
+
+		//表示も切り替えます。
+		$("#datasources").val(ds);
+		$("#seq_ids").val(id);
+	}
 
 };
