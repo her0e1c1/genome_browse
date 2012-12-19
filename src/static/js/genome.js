@@ -19,7 +19,7 @@ GlobalSettings.prototype = {
 		this.seq_ids;
 		this.tracks;
 		this.path;
-		
+
 		this.URL = document.URL;
 		/*
 		  一枚あたりの画像の幅
@@ -1353,7 +1353,7 @@ var GS = new GlobalSettings();
 
 //init
 window.onload = function(){
-	setInterval(_DEBUG, 1000);
+	//setInterval(_DEBUG, 1000);
 	init();
 	function init(){
 		//はじめに表示するのは#mainだけです。
@@ -1380,22 +1380,6 @@ window.onload = function(){
 			var tracks = GS.tracks[ds[0]][ids[0]]
 			update_tracks(ds[0], ids[0]);
 
-
-			/* checkbox */
-			$("#select_tracks input").change(function(){
-				var node = $("#select_tracks input:checked + label")
-				var name = [];
-				for(var i = 0; i < node.length; i++){
-					name.push(node.eq(i).val());
-				}
-
-				//新しく画像を指定し直します。
-				var start = _Genome.get_view().start;
-				var layer = _Genome.get_layer();
-				update_genome(start, layer, name);
-			});
-
-
 			//初期状態なので全て0番目のものを選びます。
 			//serverに保証されています。
 			var path =  json.path[ds[0]][ids[0]][tracks[0]];
@@ -1418,7 +1402,7 @@ window.onload = function(){
 		/* start layer nameを指定します。 */
 		_Genome.first_show(start, layer, name);
 		}
-		
+
 	}
 
 
@@ -1433,10 +1417,6 @@ window.onload = function(){
 			child.attr("value", value[i]);
 			child.text(text[i])
 		}
-	}
-
-	function _set_checkbox(node, value, text){
-		
 	}
 
 	/* クリックするとその周辺を表示、非表示にします。 */
@@ -1476,7 +1456,7 @@ window.onload = function(){
 		}
 	});
 
-	
+
 	/* 一度セットしたら変更はありません。 */
 	$("#datasources").change(function(){
 		var ds = $("#datasources").val();
@@ -1498,11 +1478,8 @@ window.onload = function(){
 						update_tracks(i, id);
 					}
 				}
-			}	
+			}
 		});
-
-
-
 	}
 
 	/*
@@ -1522,7 +1499,21 @@ window.onload = function(){
 			child.text(tracks[i]);
 		}
 
-		update_seq_ids(GS.seq_ids[ds]);
+		update_seq_ids(GS.seq_ids[ds])
+
+		/* checkbox */
+		$("#select_tracks input").change(function(){
+			var node = $("#select_tracks input:checked + label")
+				var name = [];
+			for(var i = 0; i < node.length; i++){
+					name.push(node.eq(i).val());
+			}
+
+			//新しく画像を指定し直します。
+			var start = _Genome.get_view().start;
+			var layer = _Genome.get_layer();
+			update_genome(start, layer, name);
+		});
 
 		//表示も切り替えます。
 		$("#datasources").val(ds);
