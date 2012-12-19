@@ -18,7 +18,8 @@ GlobalSettings.prototype = {
 		this.datasources;
 		this.seq_ids;
 		this.tracks;
-
+		this.path;
+		
 		this.URL = document.URL;
 		/*
 		  一枚あたりの画像の幅
@@ -26,7 +27,6 @@ GlobalSettings.prototype = {
 		  この値は変更できません。
 		*/
 		this.IMAGE_WIDTH = 800;
-		//this.IMAGE_HEIGHT = 300;
 
 		//計算しやすい様に奇数です。(最低が5です。)
 		this.IMAGE_NUMBER = 5;
@@ -47,7 +47,7 @@ GlobalSettings.prototype = {
 		//サーバーから必要なゲノム情報
 		this.START = 1;
 		this.MAX_LENGTH = 30000001; //30M
-		this.MAX_LENGTH = 37220;
+		//this.MAX_LENGTH = 37220;
 		//表示用に切りがいい数値に変換します。
 		this.ROUND_MAX_LENGTH = Utility.roundout(this.MAX_LENGTH);
 
@@ -729,17 +729,12 @@ Box.prototype = {
 				ctx.drawText(text);
 			}
 
-
-
 			last = sp - (st  % (layer / 100)) + 1;
 			for(var p = last; st < p; p -= (layer / 100)){
 				var x = GS.change_dna2image(p, st, DNAlength);
 				vertical_line.x = x;
 				ctx.drawRect(vertical_line);
 			}
-
-
-
 		},
 
 		//eventハンドラー
@@ -863,7 +858,6 @@ Box.prototype = {
 		},
 
 		/*
-		  スクロールは他のイベントよりも複雑なのでこちらで計算させます。
 		  (1)マウスのドラッグイベント発生
 		  (2)マウスのx座標の差をとりながら、画面を変化させる
 		  (3)ドラッグが終わったらイベント終了
@@ -901,6 +895,8 @@ Box.prototype = {
 					self.view.start -= offset_x;
 					start_x = event.clientX;
 					self.update();
+
+
 				}
 				return false;
 
@@ -1367,6 +1363,13 @@ window.onload = function(){
 			var json = Utility.string2json(data);
 			//json.pathにはサーバーに保存された画像パスがあります。
 
+			//global settingsに代入します。
+			GS.datasources = json.datasources;
+			GS.seq_ids = json.seq_ids;
+			GS.tracks = json.tracks;
+			GS.path = json.path;
+			GS.MAX_LENGTH = json.max_length;
+
 			//datasourceの設定です。
 			var ds = json.datasources;
 			_set_select($("#datasources"), ds, ds);
@@ -1379,6 +1382,7 @@ window.onload = function(){
 			for(var i = 0; i < tracks.length; i++){
 				var str = "<input type='checkbox'/><label></label>"
 				node.append(str);
+				//todo: last-childを使います。
 				var child = node.children(":last");
 				var p = json.path[ds[0]][ids[0]][tracks[i]];
 				child.attr("value", p);
@@ -1397,16 +1401,34 @@ window.onload = function(){
 				//新しく画像を指定し直します。
 				var start = _Genome.get_view().start;
 				var layer = _Genome.get_layer();
-				_Genome.init(start, layer, name);
+				update_genome(start, layer, name);
 			});
 
 
 			//初期状態なので全て0番目のものを選びます。
+			//serverに保証されています。
 			var path =  json.path[ds[0]][ids[0]][tracks[0]];
 			$("label[value='" + path +"'] + input").attr("checked","checked");
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1, 100, [path]);
 		})
+	}
+
+	function create_genome(start, layer, name){
+	}
+
+	function update_genome(start, layer, name){
+		var node = $("#details");
+		if(name.length <= 0){
+			node.hide();
+		}
+		else{
+			node.show();
+		/* start layer nameを指定します。 */
+		_Genome.first_show(start, layer, name);
+		}
+
+		
 	}
 
 
@@ -1426,8 +1448,6 @@ window.onload = function(){
 	function _set_checkbox(node, value, text){
 		
 	}
-
-
 
 	/* クリックするとその周辺を表示、非表示にします。 */
 	var minus = GS.PATH.images + "browser/minus.png";
@@ -1465,6 +1485,5 @@ window.onload = function(){
 			main.hide();
 		}
 	});
-
 
 };

@@ -93,11 +93,13 @@ def get_image():
         for id in ids:
             tracks[d][id] = path[d][id].keys()
 
+    n = 30 * 10 ** 6
     data = {
         "datasources": ds,
         "seq_ids": seq_ids,
         "tracks": tracks,
-        "path": path
+        "path": path,
+        "max_length": n,
         }
     print(data)
     return json.dumps(data)
