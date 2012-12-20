@@ -1384,6 +1384,10 @@ window.onload = function(){
 			var ds = GS.datasources[0];
 			var id = GS.seq_ids[ds][0];
 			var tr = GS.tracks[ds][id][0];
+
+			/* 
+			   datasourceとseq_idは一つに決めます。
+			 */
 			var loads = {
 				datasource: ds,
 				seq_id:  id,
@@ -1392,6 +1396,7 @@ window.onload = function(){
 				layer: 100,
 			};
 
+			//loadsを一部書き換えます。
 			for(var i in loads){
 				if($.cookie(i) !== null){
 					//文字列から数値に変換します。
@@ -1405,26 +1410,29 @@ window.onload = function(){
 				}
 			}
 
+			event_click();
 
-			
-
+			//各項目の初期化もします。
 			init_datasources(GS.datasources);
-			update_seq_ids(GS.seq_ids[loads.datasource]);
-			update_tracks(loads.datasource, loads.seq_id);
+			init_seq_ids(GS.seq_ids[loads.datasource]);
+			init_tracks(loads.datasource, loads.seq_id);
+
+			$("#datasources").val(loads.datasource);
+			$("#seq_ids").val(loads.seq_id);
+			GS.c_datasource = loads.datasource;
+			GS.c_seq_id = loads.seq_id;
 
 			var tracks = GS.tracks[loads.datasource][loads.seq_id];
-		
-			var path =  json.path[loads.datasource][loads.seq_id][tracks[0]];
-			$("label[value='" + path +"'] + input").attr("checked","checked");
 
-			/* start layer nameを指定します。 */
-			_Genome = new genome(loads.start, loads.layer, [path]);
+			var path = [];
+			path.push (GS.path[loads.datasource][loads.seq_id][tracks[0]]);
+			check_tracks(path);
 
-
+			_Genome = new genome(loads.start, loads.layer, path);
 		})
 	}
 
-
+	/* checkboxの選択イベントの際に実行します。 */
 	function update_genome(start, layer, name){
 		var node = $("#details");
 		if(name.length <= 0){
@@ -1439,7 +1447,6 @@ window.onload = function(){
 
 
 	function _set_select(node, value, text){
-
 		if(value.length !== text.length)
 			throw "配列の数があっていません。";
 		node.empty();
@@ -1451,43 +1458,44 @@ window.onload = function(){
 		}
 	}
 
-	/* クリックするとその周辺を表示、非表示にします。 */
-	var minus = GS.PATH.images + "browser/minus.png";
-	var plus = GS.PATH.images + "browser/plus.png";
-	$("img.minus")
-		.attr("src", minus)
-		.click(function(){
-			var c = $(this).parent().parent().find(".click_hide");
-			if(c.css("display") === "none"){
-				$(this).attr("src", minus);
-				c.show();
+	function event_click(){
+		/* クリックするとその周辺を表示、非表示にします。 */
+		var minus = GS.PATH.images + "browser/minus.png";
+		var plus = GS.PATH.images + "browser/plus.png";
+		$("img.minus")
+			.attr("src", minus)
+			.click(function(){
+				var c = $(this).parent().parent().find(".click_hide");
+				if(c.css("display") === "none"){
+					$(this).attr("src", minus);
+					c.show();
+				}
+				else{
+					$(this).attr("src", plus);
+					c.hide();
+				}
+			});
+
+		$("#tab_menu > ul > li").click(function(event){
+			var self = $(this);
+			var main = $("#main");
+			var slct = $("#select_tracks");
+			var prfr = $("#preferences");
+
+			var text = self.text();
+			if(text === "Select Tracks"){
+				main.hide();
+				slct.slideDown();
 			}
-			else{
-				$(this).attr("src", plus);
-				c.hide();
+			else if (text === "Browser"){
+				main.slideDown();
+				slct.hide();
+			}
+			if(text === "Preferences"){
+				main.hide();
 			}
 		});
-
-	$("#tab_menu > ul > li").click(function(event){
-		var self = $(this);
-		var main = $("#main");
-		var slct = $("#select_tracks");
-		var prfr = $("#preferences");
-
-		var text = self.text();
-		if(text === "Select Tracks"){
-			main.hide();
-			slct.slideDown();
-		}
-		else if (text === "Browser"){
-			main.slideDown();
-			slct.hide();
-		}
-		if(text === "Preferences"){
-			main.hide();
-		}
-	});
-
+	}
 
 	/* 一度セットしたら変更はありません。 */
 	function init_datasources(ds){
@@ -1502,61 +1510,59 @@ window.onload = function(){
 		node.change(function(){
 			var ds = $("#datasources").val();
 			var ids = GS.seq_ids[ds];
-			document.cookie = "";
 			$.cookie("datasource", ds);
 			$.cookie("seq_id", GS.seq_ids[ds][0]);
 			location.reload();
 		});
 	}
 
-	function update_seq_ids(ids){
+	function init_seq_ids(ids){
 		var node = $("#seq_ids");
 		_set_select(node, ids, ids);
 
-		/* datasourceが変更されるたびに実行します。*/
 		node.change(function(){
 			var id = node.val();
 			$.cookie("seq_id", id);
-
-			// var ids = GS.seq_ids;
-			// for(var i in ids){
-			// 	for(var j in ids[i]){
-			// 		if(ids[i][j] === id){
-			// 			update_tracks(i, id);
-			// 		}
-			// 	}
-			// }
-
 			location.reload();
 		});
+	}
+
+	function check_tracks(name){
+		for(var i = 0; i < name.length; i++){
+			var node = $("#select_tracks_form input[path='" + name +"']");
+				node.attr("checked","checked");
+		}
 	}
 
 	/*
 	  datesourceとseq_idsからselect tracksで表示するtrackを決めます。
 	 */
-	function update_tracks(ds, id){
+	function init_tracks(ds, id){
 		var tracks = GS.tracks[ds][id];
 		var node = $("#select_tracks_form");
 		node.empty();
 		for(var i = 0; i < tracks.length; i++){
-			var str = "<input type='checkbox'/><label></label>"
+
+			var str = "<input type='checkbox'/>"
 			node.append(str);
-			//todo: last-childを使います。
 			var child = node.children(":last");
 			var p = GS.path[ds][id][tracks[i]];
-			child.attr("value", p);
+			child.attr("path", p);
+
+			str = "<label />";
+			node.append(str);
+			var child = node.children(":last");
 			child.text(tracks[i]);
+
 			GS.c_tracks.push({p: tracks[i]});
 		}
 
-		update_seq_ids(GS.seq_ids[ds])
-
 		/* checkbox */
 		$("#select_tracks input").change(function(){
-			var node = $("#select_tracks input:checked + label")
+			var node = $("#select_tracks input:checked")
 			var name = [];
 			for(var i = 0; i < node.length; i++){
-					name.push(node.eq(i).val());
+					name.push(node.eq(i).attr("path"));
 			}
 
 			//新しく画像を指定し直します。
@@ -1564,15 +1570,5 @@ window.onload = function(){
 			var layer = _Genome.get_layer();
 			update_genome(start, layer, name);
 		});
-
-		//表示も切り替えます。
-		$("#datasources").val(ds);
-		$("#seq_ids").val(id);
-		GS.c_datasource = ds;
-		GS.c_seq_id = id;
-
-		//クッキーの書き換えも行います。
-		$.cookie("datasource", ds);
-		$.cookie("seq_id", id);
 	}
 };
