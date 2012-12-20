@@ -524,6 +524,8 @@ Box.prototype = {
 			/*
 			  maxがおかしな値を取る可能性がありますので、
 			  こちらが後評価です。
+
+			  todo: 数値でなくて文字列などがきた場合の対応もします。
 			*/
 			if(start === undefined ||
 			   start <= 0 ){
@@ -581,7 +583,7 @@ Box.prototype = {
 			//描画
 			this.show();
 		},
-
+		
 		/*
 		  imgaelistのデータを全て表示します。
 		 */
@@ -617,7 +619,14 @@ Box.prototype = {
 			var offset = this.get_current_offset();
 			this.slide_with_offset(offset);
 			this.show_info();
+
+			//cookieの書き換えも行います。
+			this.update_cookie();
 		},
+
+		/*
+		   イベントが起きた後に、必要な箇所を書き換えます。
+		 */
 		show_info: function(){
 			var start = Math.floor(this.view.start)
 			$("#input_view_start").val(start);
@@ -685,6 +694,14 @@ Box.prototype = {
 				}
 			}
 			this.show();
+		},
+
+		/*
+		  start, layerのクッキー値を変更します。
+		 */
+		update_cookie: function(){
+			$.cookie("start", this.view.start);
+			$.cookie("layer", this.layer);
 		},
 
 		_update_overview: function(){
@@ -1337,19 +1354,6 @@ Box.prototype = {
 }(window));
 
 
-function _DEBUG(){
-
-	var txt = "";
-	txt += "view.start:" + _Genome.get_view().start;
-	txt += "; view.stop:" + _Genome.get_view().stop;
-	txt += ";<br /> update_point.start:" + _Genome.get_imagelist().get_update_point().start;
-	txt += "; update_point.stop:" + _Genome.get_imagelist().get_update_point().stop;
-	txt += "; <br />point.start:" + _Genome.get_imagelist().point.start;
-	txt += "; point.stop:" + _Genome.get_imagelist().point.stop;
-	$("#debug").html(txt);
-}
-
-
 //global variables
 var _Genome;
 var Utility = new Utility();
@@ -1375,6 +1379,7 @@ window.onload = function(){
 			GS.MAX_LENGTH = json.max_length;
 
 			//各値の初期値を設定します。
+			//配列の0番目はserverに保証されています。
 			//cookieが設定してある場合は置き換わります。
 			var ds = GS.datasources[0];
 			var id = GS.seq_ids[ds][0];
@@ -1387,32 +1392,33 @@ window.onload = function(){
 				layer: 100,
 			};
 
-			//初期値を決めるsettingsです。
-			var set = {};
 			for(var i in loads){
-				if($.cookie(i) === null){
-					set[i] = loads[i];
-				}
-				else{
-					set[i] = $.cookie(i);
+				if($.cookie(i) !== null){
+					//文字列から数値に変換します。
+					var num = Math.floor($.cookie(i));
+					if(isNaN(num)){
+						loads[i] = $.cookie(i);
+					}
+					else{
+						loads[i] = num;
+					}
 				}
 			}
 
-			_set_select($("#datasources"), GS.datasources, GS.datasources);
 
-			update_seq_ids(GS.seq_ids[set.datasource]);
+			
 
-			var tracks = GS.tracks[set.datasource][set.seq_id];
-			update_tracks(set.datasource, set.seq_id);
+			init_datasources(GS.datasources);
+			update_seq_ids(GS.seq_ids[loads.datasource]);
+			update_tracks(loads.datasource, loads.seq_id);
 
-			//初期状態なので全て0番目のものを選びます。
-			//serverに保証されています。
-			var path =  json.path[set.datasource][set.seq_id][tracks[0]];
+			var tracks = GS.tracks[loads.datasource][loads.seq_id];
+		
+			var path =  json.path[loads.datasource][loads.seq_id][tracks[0]];
 			$("label[value='" + path +"'] + input").attr("checked","checked");
 
 			/* start layer nameを指定します。 */
-			//_Genome = new genome(1, 100, [path]);
-			_Genome = new genome(set.start, set.layer, [path]);
+			_Genome = new genome(loads.start, loads.layer, [path]);
 
 
 		})
@@ -1484,11 +1490,16 @@ window.onload = function(){
 
 
 	/* 一度セットしたら変更はありません。 */
-	$("#datasources").change(function(){
-		var ds = $("#datasources").val();
-		var ids = GS.seq_ids[ds];
-		update_tracks(ds, ids[0]);
-	});
+	function init_datasources(ds){
+		var node = $("#datasources");
+		_set_select(node, ds, ds);
+
+		node.change(function(){
+			var ds = $("#datasources").val();
+			var ids = GS.seq_ids[ds];
+			update_tracks(ds, ids[0]);
+		});
+	}
 
 	function update_seq_ids(ids){
 		var node = $("#seq_ids");
