@@ -76,7 +76,7 @@ GlobalSettings.prototype = {
 		this.MIN_LAYER = this.LAYER_VALUES[0];
 
 		//取得するデータ名
-		this.TRACK_NAME = ["sample"];
+		this.TRACK_NAME;
 
 		//css関連(偶数条件付きです。)
 		this.OVERVIEW_HEIGHT = 50;
@@ -350,7 +350,6 @@ Box.prototype = {
 			r = true;
 		return r;
 	},
-
 };
 
 
@@ -1133,11 +1132,7 @@ Box.prototype = {
 				flag = false;
 				flag_drag = false;
 			});
-
 		},
-
-
-		//init
 
 		/*
 		  cssの初期化をします。
@@ -1162,7 +1157,6 @@ Box.prototype = {
 			$("canvas.box").css("top", (- GS.OVERVIEW_HEIGHT) + "px");
 
 			//details
-
 		},
 
 		_init_set_options: function(){
@@ -1192,7 +1186,6 @@ Box.prototype = {
 			}
 
 			ctx.drawRect(background);
-
 		},
 
 		/*
@@ -1254,7 +1247,6 @@ Box.prototype = {
 				 text.x = x;
 				 ctx.drawText(text);
 			 }
-
 		},
 
 		/*
@@ -1343,16 +1335,13 @@ Box.prototype = {
 			ctx = $("#region  canvas.box");
 			this.region_box = new Box(ctx ,rect , bothends.start, bothends.stop);
 			this.region_box.draw();
-
 		},
-
 	};
 
 	//グローバル空間に登録します。
 	window.genome = genome;
 
 }(window));
-
 
 //global variables
 var _Genome;
@@ -1361,7 +1350,6 @@ var GS = new GlobalSettings();
 
 //init
 window.onload = function(){
-	//setInterval(_DEBUG, 1000);
 	init();
 	function init(){
 		//はじめに表示するのは#mainだけです。
@@ -1423,7 +1411,6 @@ window.onload = function(){
 			GS.c_seq_id = loads.seq_id;
 
 			var tracks = GS.tracks[loads.datasource][loads.seq_id];
-
 			var path = [];
 			path.push (GS.path[loads.datasource][loads.seq_id][tracks[0]]);
 			check_tracks(path);
@@ -1444,7 +1431,6 @@ window.onload = function(){
 		_Genome.first_show(start, layer, name);
 		}
 	}
-
 
 	function _set_select(node, value, text){
 		if(value.length !== text.length)
@@ -1572,3 +1558,10 @@ window.onload = function(){
 		});
 	}
 };
+
+/*
+todo:
+画面の端でバグ
+trackのcookie
+スクロールでのcookie
+*/

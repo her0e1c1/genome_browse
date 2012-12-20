@@ -1,4 +1,4 @@
-*{
+* {
  margin:0px;
  padding:0px;
  box-sizing: border-box;
@@ -76,23 +76,6 @@ canvas.box{
 }
 
 /*
- *  overview
- */
-
-#overview_scale{
-	/* box上に重ねるため*/
-	float: left;
-}
-
-/*
- *  region
- */
-#region_scale{
-	float: left;
-}
-
-
-/*
  *  tab_menu
  */
 #tab_menu ul{
@@ -110,26 +93,19 @@ canvas.box{
 /*
  *  search
  */
-#search{
 
-}
-#search p{
-	
-}
-
-#controller{
-	clear: both;
-}
-
+/* float箇所 */
 #controller p,
 #controller button,
-#controller select{
+#controller select,
+#region_scale,
+#overview_scale{ 
 	float: left;
 }
 
-
 /* clear箇所*/
-#search, #region, #overview, #details, #view_start
+#search, #region, #overview, #details, #view_start,
+#controller, #tab_menu
 {
 	clear: both;
 }
