@@ -1393,8 +1393,6 @@ window.onload = function(){
 		})
 	}
 
-	function create_genome(start, layer, name){
-	}
 
 	function update_genome(start, layer, name){
 		var node = $("#details");
@@ -1406,7 +1404,6 @@ window.onload = function(){
 		/* start layer nameを指定します。 */
 		_Genome.first_show(start, layer, name);
 		}
-
 	}
 
 
