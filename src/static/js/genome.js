@@ -1494,10 +1494,18 @@ window.onload = function(){
 		var node = $("#datasources");
 		_set_select(node, ds, ds);
 
+		/*
+		  イベント後に再度読み込みさせます。
+		  datasourceを変更させた場合
+		  seq_idとtracksも同時に変化させます。
+		*/
 		node.change(function(){
 			var ds = $("#datasources").val();
 			var ids = GS.seq_ids[ds];
-			update_tracks(ds, ids[0]);
+			document.cookie = "";
+			$.cookie("datasource", ds);
+			$.cookie("seq_id", GS.seq_ids[ds][0]);
+			location.reload();
 		});
 	}
 
@@ -1508,14 +1516,18 @@ window.onload = function(){
 		/* datasourceが変更されるたびに実行します。*/
 		node.change(function(){
 			var id = node.val();
-			var ids = GS.seq_ids;
-			for(var i in ids){
-				for(var j in ids[i]){
-					if(ids[i][j] === id){
-						update_tracks(i, id);
-					}
-				}
-			}
+			$.cookie("seq_id", id);
+
+			// var ids = GS.seq_ids;
+			// for(var i in ids){
+			// 	for(var j in ids[i]){
+			// 		if(ids[i][j] === id){
+			// 			update_tracks(i, id);
+			// 		}
+			// 	}
+			// }
+
+			location.reload();
 		});
 	}
 
@@ -1563,7 +1575,4 @@ window.onload = function(){
 		$.cookie("datasource", ds);
 		$.cookie("seq_id", id);
 	}
-
 };
-
-
