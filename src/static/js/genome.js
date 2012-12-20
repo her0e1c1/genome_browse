@@ -1364,8 +1364,8 @@ window.onload = function(){
 		$(".other_main").hide();
 
 		$.get(GS.URL + "/get_imagepath",{},function(data){
+			//serverからのデータを変換します。
 			var json = Utility.string2json(data);
-			//json.pathにはサーバーに保存された画像パスがあります。
 
 			//global settingsに代入します。
 			GS.datasources = json.datasources;
@@ -1374,19 +1374,35 @@ window.onload = function(){
 			GS.path = json.path;
 			GS.MAX_LENGTH = json.max_length;
 
+			//リロードした場合など為にの現在の設定をします。
+			var datasource;
+			if($.cookie("datasource") === null){
+				datasource = GS.datasources[0];
+			}
+			else{
+				datasource = $.cookie("datasource");
+			}
+
+			var seq_id;
+			if($.cookie("seq_id") === null){
+				seq_id = GS.seq_ids[datasource][0];
+			}
+			else{
+				seq_id = $.cookie("seq_id");
+			}
+
 			//datasourceの設定です。
 			var ds = json.datasources;
 			_set_select($("#datasources"), ds, ds);
 
-			var ids = json.seq_ids[ds[0]];
-			update_seq_ids(ids);
+			update_seq_ids(GS.seq_ids[datasource]);
 
-			var tracks = GS.tracks[ds[0]][ids[0]]
-			update_tracks(ds[0], ids[0]);
+			var tracks = GS.tracks[datasource][seq_id];
+			update_tracks(datasource, seq_id);
 
 			//初期状態なので全て0番目のものを選びます。
 			//serverに保証されています。
-			var path =  json.path[ds[0]][ids[0]][tracks[0]];
+			var path =  json.path[datasource][seq_id][tracks[0]];
 			$("label[value='" + path +"'] + input").attr("checked","checked");
 			/* start layer nameを指定します。 */
 			_Genome = new genome(1, 100, [path]);
@@ -1522,6 +1538,10 @@ window.onload = function(){
 		$("#seq_ids").val(id);
 		GS.c_datasource = ds;
 		GS.c_seq_id = id;
+
+		//クッキーの書き換えも行います。
+		$.cookie("datasource", ds);
+		$.cookie("seq_id", id);
 	}
 
 };
