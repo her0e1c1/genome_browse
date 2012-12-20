@@ -20,6 +20,11 @@ GlobalSettings.prototype = {
 		this.tracks;
 		this.path;
 
+		//現在設定されている情報です。
+		this.c_datasource;
+		this.c_seq_id;
+		this.c_tracks = [];
+
 		this.URL = document.URL;
 		/*
 		  一枚あたりの画像の幅
@@ -585,7 +590,6 @@ Box.prototype = {
 			var len = this.imagelists.length;
 			//子供の要素を一度中身をリセットします。
 			n.empty();
-			//n.css("height", GS.IMAGE_HEIGHT * len);
 			n.css("width", GS.IMAGE_WIDTH * GS.IMAGE_NUMBER);
 			for(var j = 0; j < len; j++){
 				n.append("<div></div>");
@@ -594,9 +598,7 @@ Box.prototype = {
 					child.append("<img />");
 					var grand_child = child.children(":last");
 					grand_child.attr("src", this.imagelists[j].images[i].src);
-					//grand_child.css("height", GS.IMAGE_HEIGHT);
 					grand_child.css("width", GS.IMAGE_WIDTH);
-
 				}
 			}
 		},
@@ -619,6 +621,15 @@ Box.prototype = {
 		show_info: function(){
 			var start = Math.floor(this.view.start)
 			$("#input_view_start").val(start);
+			
+			var st = Math.floor(this.get_view().start);
+			var sp = Math.floor(this.get_view().stop);
+			var text = GS.c_datasource + " :";
+			text += this.layer + " bp from ";
+			text += GS.c_seq_id + " :";
+			text += st + "..";
+			text += sp;
+			$("#page_title p").text(text);
 		},
 
 		/*
@@ -664,7 +675,7 @@ Box.prototype = {
 				  つまり、画像の書き換えはしませんが、
 				  表示するデータの変更はします。
 				*/
-				//show_info()だけでよい
+				//show_info()だけです。
 				this.show_info();
 				return;
 			}
@@ -774,15 +785,11 @@ Box.prototype = {
 				var mediam = self.view.start + (self.layer / 2);
 				var start = mediam - (new_layer / 2);
 				self.first_show(start, new_layer, self.name);
-
 			});
-
 		},
 
 		/*
 		  画像を移動する6つのボタン(<< < - +  > >>)の制御をします。
-
-		  bug: 連打すると更新についていけてないようです。
 		 */
 		_event_controler_button: function(){
 			var self = this;
@@ -833,7 +840,6 @@ Box.prototype = {
 					self.first_show(start, new_layer, self.name);
 				}
 			});
-
 		},
 
 		/*
@@ -889,7 +895,6 @@ Box.prototype = {
 				if(flag){
 					offset_x = WIGHT * (event.clientX - start_x);
 					offset_x *= self.layer;
-					//start_x = event.clientX;
 					var co = self.get_current_offset();
 					self.slide_with_offset(co - offset_x);
 					self.view.start -= offset_x;
@@ -920,15 +925,14 @@ Box.prototype = {
 		/*
 		  overviewのイベント
 		  クリックのみの場合
-		  その位置をスタートに変更する
+		  その位置をスタートに変更します。
 
 		  ドラッグの場合
 		  スタートの位置は常に左側から
 		  ドラッグの大きさと縮小拡大は対応させます。
 
-		  実際の計算式
-		  IMAGE_WIDTH : 30M = offsetX : view.start
-
+		  計算式
+		  IMAGE_WIDTH : MAX_LENGTH = offsetX : view.start
 		 */
 		_event_overview: function(){
 			var self = this;
@@ -1497,6 +1501,7 @@ window.onload = function(){
 			var p = GS.path[ds][id][tracks[i]];
 			child.attr("value", p);
 			child.text(tracks[i]);
+			GS.c_tracks.push({p: tracks[i]});
 		}
 
 		update_seq_ids(GS.seq_ids[ds])
@@ -1518,6 +1523,8 @@ window.onload = function(){
 		//表示も切り替えます。
 		$("#datasources").val(ds);
 		$("#seq_ids").val(id);
+		GS.c_datasource = ds;
+		GS.c_seq_id = id;
 	}
 
 };
