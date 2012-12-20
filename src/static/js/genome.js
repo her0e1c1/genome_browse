@@ -1374,38 +1374,47 @@ window.onload = function(){
 			GS.path = json.path;
 			GS.MAX_LENGTH = json.max_length;
 
-			//リロードした場合など為にの現在の設定をします。
-			var datasource;
-			if($.cookie("datasource") === null){
-				datasource = GS.datasources[0];
-			}
-			else{
-				datasource = $.cookie("datasource");
+			//各値の初期値を設定します。
+			//cookieが設定してある場合は置き換わります。
+			var ds = GS.datasources[0];
+			var id = GS.seq_ids[ds][0];
+			var tr = GS.tracks[ds][id][0];
+			var loads = {
+				datasource: ds,
+				seq_id:  id,
+				tracks: tr,
+				start: 1,
+				layer: 100,
+			};
+
+			//初期値を決めるsettingsです。
+			var set = {};
+			for(var i in loads){
+				if($.cookie(i) === null){
+					set[i] = loads[i];
+				}
+				else{
+					set[i] = $.cookie(i);
+				}
 			}
 
-			var seq_id;
-			if($.cookie("seq_id") === null){
-				seq_id = GS.seq_ids[datasource][0];
-			}
-			else{
-				seq_id = $.cookie("seq_id");
-			}
+			_set_select($("#datasources"), GS.datasources, GS.datasources);
 
-			//datasourceの設定です。
-			var ds = json.datasources;
-			_set_select($("#datasources"), ds, ds);
+			update_seq_ids(GS.seq_ids[set.datasource]);
 
-			update_seq_ids(GS.seq_ids[datasource]);
-
-			var tracks = GS.tracks[datasource][seq_id];
-			update_tracks(datasource, seq_id);
+			var tracks = GS.tracks[set.datasource][set.seq_id];
+			update_tracks(set.datasource, set.seq_id);
 
 			//初期状態なので全て0番目のものを選びます。
 			//serverに保証されています。
-			var path =  json.path[datasource][seq_id][tracks[0]];
+			var path =  json.path[set.datasource][set.seq_id][tracks[0]];
 			$("label[value='" + path +"'] + input").attr("checked","checked");
+
 			/* start layer nameを指定します。 */
-			_Genome = new genome(1, 100, [path]);
+			//_Genome = new genome(1, 100, [path]);
+			_Genome = new genome(set.start, set.layer, [path]);
+
+
 		})
 	}
 
@@ -1485,7 +1494,7 @@ window.onload = function(){
 		var node = $("#seq_ids");
 		_set_select(node, ids, ids);
 
-	/* datasourceが変更されるたびに実行します。*/
+		/* datasourceが変更されるたびに実行します。*/
 		node.change(function(){
 			var id = node.val();
 			var ids = GS.seq_ids;
@@ -1522,7 +1531,7 @@ window.onload = function(){
 		/* checkbox */
 		$("#select_tracks input").change(function(){
 			var node = $("#select_tracks input:checked + label")
-				var name = [];
+			var name = [];
 			for(var i = 0; i < node.length; i++){
 					name.push(node.eq(i).val());
 			}
@@ -1545,3 +1554,5 @@ window.onload = function(){
 	}
 
 };
+
+
