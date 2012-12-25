@@ -598,7 +598,9 @@ Box.prototype = {
 				for(var i = 0; i < GS.IMAGE_NUMBER; i++){
 					child.append("<img />");
 					var grand_child = child.children(":last");
+					grand_child.error(default_image)
 					grand_child.attr("src", this.imagelists[j].images[i].src);
+
 					grand_child.css("width", GS.IMAGE_WIDTH);
 				}
 			}
@@ -774,8 +776,10 @@ Box.prototype = {
 		*/
 		_update_click_button: function (left_or_right, size){
 			var scroll_size = (this.layer * left_or_right) * size;
-			this.slide_with_offset(scroll_size, "view");
-			this.update();
+			if(scroll_size + this.view.start > 0){
+				this.slide_with_offset(scroll_size, "view");
+				this.update();
+			}
 		},
 
 		/*
@@ -916,7 +920,6 @@ Box.prototype = {
 					self.view.start -= offset_x;
 					start_x = event.clientX;
 					self.update();
-
 
 				}
 				return false;
@@ -1558,6 +1561,12 @@ window.onload = function(){
 		});
 	}
 };
+
+function default_image(){
+	$(this).attr("src", "/static/images/browser/noImage.jpg");
+	$(this).css("width", GS.IMAGE_WIDTH);
+	$(this).css("height", 300);
+}
 
 /*
 todo:
