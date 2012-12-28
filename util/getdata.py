@@ -1,110 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+"""
+requestsにはバグが混在しています。
+v0.14.2を使用します。
+"""
+
 import os
 import sys
 import urlparse
 import time
 import getpass
-#import argparse
+import argparse
+import ConfigParser
 import requests
 from BeautifulSoup import BeautifulSoup
-
-"""
-requestsにはバグが混在しています。
-v0.14.2を使用します。
-
-"""
-"""
-GBrowseの設定ファイルの修正箇所
-
-()の値は修正前です。
-わかりやすく単位をつけた状態で書いています。
-
-/etc/gbrowse2/thaliana.conf
-region segment = 1G(10000)
-
-/etc/gbrowse2/GBrowse.conf
-slave_timeout = 1000(45)
-global_timeout = 1000(60)
-
-pad_left = 0(50)
-pad_right = 0(50)
-
-region segment  1G(200000)
-max segment 1G(5000000)
-
-/etc/apache2/conf.d/gbrowse2.conf
-TimeOut 10000(追加)
-
-CachedTrack.pm
-DEFAULT_REQUEST_TIME => 60*60(60);
-
-
-fist loginで失敗した場合はメモリのエラーの可能性があります。
-"""
-
-
-"""
-予めデータを取得するための設定事項を書きます。
-分割するのに必要なデータとは分けて書きます。
-
-保存パスの命名は
-database/seq_id/track
-とします。
-"""
-
-#画像を取得するトラックを指定します。
-tracks = [
-#    "Ahal_200_L1_CoverageXyplot",
-    "Ahal_200_L1_Reads",
-]
-
-CONF = {
-
-    #アクセスするurlです。
-    "host": "http://gbrowse.seselab.org",
-
-    #リクエストをPOSTするパスです。
-    #url = host + path
-    "path": "/gb2/gbrowse/thaliana",
-
-    #最大長は手動で設定します。
-    #"max_length":  30 * (10 ** 6),  # 30M
-    "max_length":  1 * (10 ** 4),  # 1M
-
-    #変更不可
-    #"image_max_width": 8000,
-    "each_image_width" : 800,
-
-    #apacheの認証に必要です。
-    "user": "ishii",
-
-    #パスワードは直接ファイルに書き込まず、引数で指定します。
-    "passwd": getpass.getpass("Password:"),
-
-    #保存先
-    #save_root/datasource/seq_id/tracks/layer/start.png
-    "save_root": "data",
-    "datasource": "thaliana",
-    "seq_id": "Chr1",
-    "tracks": tracks,
-
-    #分割したときの一枚の画像に収まる塩基数です。
-    "layer": [100,
-              200,
-              1000,
-              2000,
-              5000,
-              10000,
-              20000,
-              50000,
-              1000000,
-              2000000,
-              5000000,
-              10000000],
-    "start": 1,
-    "debug": True,
-}
+import config  # 設定ファイルを読み込みます。
 
 
 class GraphicData:
@@ -115,6 +26,7 @@ class GraphicData:
         self.start = start
         self.stop = stop
         self.size = stop - start
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -130,6 +42,8 @@ class GetGBrowseData:
         self._url = url
         self._host = conf["host"]
         self._user = conf["user"]
+        if conf["passwd"] is None:
+            conf["passwd"] = getpass.getpass("Password:")
         self._passwd =conf["passwd"]
         self._auth = requests.auth.HTTPDigestAuth(self._user, self._passwd)
         self._cookies = None
@@ -159,10 +73,6 @@ class GetGBrowseData:
             if not os.path.isdir(dir):
                 os.mkdir(dir)
 
-        #ログインは完了させておきます。
-        #first loginはinitで呼ぶと通信が上手くいきません。
-        #self._first_login()
-
     #requests.get/postのラッパー
     def get(self, url=None):
         if url is None:
@@ -181,18 +91,18 @@ class GetGBrowseData:
         return self._image_max_width / self._each_image_width
 
     #ここから呼び出します。
-    def get_image(self, start, stop):
+    def get_image(self, start, stop, count=3):
         res = self._post_from_to_genome(start, stop)
         res = self._post_to_get_imagepath()
         paths = self._parse_to_get_imagepath(res)
 
         for (track, path) in paths.items():
             #他の画像が得られた場合はやり直します。
-            if path.find("grey.png") != -1:
-                self.get_image(start, stop)
+            #ただし3回までです。
+            if path.find("grey.png") != -1 and count > 0:
+                self.get_image(start, stop, count-1)
             else:
                 self._save_image(GraphicData(track, path, start, stop))
-
 
     #serverへpostする関数
     def _post_from_to_genome(self, start, stop):
@@ -419,17 +329,16 @@ class GetGBrowseData:
         if self._debug: print("config success!")
 
 
-
-#保存先のrootディレクトリ名です。
-CONF["save_root"] = os.path.expanduser(CONF["save_root"])
-dir = os.path.join(os.getcwd(), CONF["save_root"])
-if not os.path.isdir(dir):
-    os.mkdir(dir)
-
+def make_rootpath(root):
+    #保存先のrootディレクトリ名です。
+    CONF["save_root"] = os.path.expanduser(CONF["save_root"])
+    dir = os.path.join(os.getcwd(), CONF["save_root"])
+    if not os.path.isdir(dir):
+        os.mkdir(dir)
 
 #GetGBroseDataのクラスを代入します。
 
-def get_layer(start, stop, layer, ggd=None):
+def get_data(start, stop, layer, ggd):
     """
     1からmax_lengthまでの画像を取得します。
     GBrowseの関係上
@@ -441,8 +350,6 @@ def get_layer(start, stop, layer, ggd=None):
     ただし、 x < stop < x + 300
 
     """
-    if ggd is None:
-        ggd = GetGBrowseData(CONF)
 
     #実際のリクエストのstartは101等になります。
     if start <= layer:
@@ -455,8 +362,7 @@ def get_layer(start, stop, layer, ggd=None):
 
     start = start * rate + 1
     for st in range(start , stop, layer * rate * 3):
-        #1pxずれることは仕方ないものとします。
-        #本来は- 1します。
+        #2塩基ずれることは仕方ないものとします。
         ggd.get_image(st, st + layer * rate - 1)
 
 
@@ -464,40 +370,48 @@ def get_width(layer):
     """
     layerに対する一枚当りの画像の大きさを指定します。
     """
+    width = config.CONF["image_max_width"]
     if(layer <= 10 ** 3):
-        return 8000
+        return width
     else:
-        return 800
+        return width / 10
+
+
+def start(conf):
+    for layer in conf["layer"]:
+        w = get_width(layer)
+        conf["image_max_width"] = w
+        ggd = GetGBrowseData(conf)
+        ggd.first_login()
+        get_data(conf["start"], conf["max_length"], layer, ggd)
+
 
 def main():
-
-    global GGD
-
     usage = \
 """
 使い方
-
-./getdata.py start stop width
-各引数には、数値を指定してください。
+./getdata.py -p passwd
+各種設定はconfig.pyで行います。
 """
-    #p = argparse.ArgumentParser(usage=usage)
-    #p.add_argument("start")
-    #p.add_argument("stop")
-    #p.add_argument("passwd")
-    #args = p.parse_args()
-    #CONF["passwd"] = args.passwd
-    #start = int(args.start)
-    #stop = int(args.stop)
-    #get_layer(1,10000, 100)
-    #CONF["passwd"] = getpass.getpass("Password:")
+    p = argparse.ArgumentParser(usage=usage)
+    p.add_argument("-p", dist="passwd")
+    args = p.parse_args()
 
+    #パスワードを入力します。
+    passwd = None
+    if args.passwd is None:
+        if config.CONF["passwd"] is None:
+            pass
+        else:
+            passwd = config.CONF["passwd"]
+    else:
+        passwd = args.passwd
+    
+    config.CONF["passwd"] = passwd
+    sys.exit()
+    #設定完了
+    start(config.CONF)
 
-    for layer in CONF["layer"]:
-        w = get_width(layer)
-        CONF["image_max_width"] = w
-        ggd = GetGBrowseData(CONF)
-        ggd.first_login()
-        get_layer(CONF["start"], CONF["max_length"], layer, ggd)
 
 if __name__ == "__main__":
     #計測時間
