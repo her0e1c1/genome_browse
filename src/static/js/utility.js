@@ -200,6 +200,57 @@ Utility.prototype = {
 		return root + path + "/";
 	},
 
+	/* 
+	   10でtimes回割った値を4桁で返します。
+	   1234k
+	   123.4k
+	   12.34k
+	   1.234k
+	*/
+	divided10: function(number, times){
+		d = this.get_digits(number)
+		if(times === 3){
+			number -= (number % Math.pow(10, d - times - 1))
+		}
+		else if(times === 6){
+			number -= (number % Math.pow(10, d - times + 2))
+		}
+
+		for(var i = 0; i < times; i++){
+			number /= 10
+		}
+		return number
+	},
+
+	/*
+	  読みやすいように値を変更します
+	  1000=> 1k
+	  1200=> 1.2k
+
+	  文字列になります。
+	  端数は切り下げます。
+	  1000111 => 1M
+	 */
+	change_number:function(number){
+		d = this.get_digits(number)
+
+		if(4 <= d && d <= 6){
+			//k
+			n = this.divided10(number, 3)
+			return n+"k"
+			
+		}
+		else if(7 <= d && d <= 9){
+			//M
+			n = this.divided10(number, 6)
+			return n+"M"			
+		}
+		else{
+			//何もしませんが文字列にします。
+			return number + ""
+		}
+	},
+
 };
 
 u = new Utility(); //for debug
