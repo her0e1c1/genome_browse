@@ -331,12 +331,11 @@ class GetGBrowseData:
 
 def make_rootpath(root):
     #保存先のrootディレクトリ名です。
-    CONF["save_root"] = os.path.expanduser(CONF["save_root"])
-    dir = os.path.join(os.getcwd(), CONF["save_root"])
+    root = os.path.expanduser(root)
+    dir = os.path.join(os.getcwd(), root)
     if not os.path.isdir(dir):
         os.mkdir(dir)
 
-#GetGBroseDataのクラスを代入します。
 
 def get_data(start, stop, layer, ggd):
     """
@@ -348,36 +347,51 @@ def get_data(start, stop, layer, ggd):
     (101,200), (401, 500), ..., (x, x + 299)
     stopを含んだ所まで実行します。
     ただし、 x < stop < x + 300
-
     """
 
-    #実際のリクエストのstartは101等になります。
-    if start <= layer:
-        start = layer + 1
-
+    #スタートの位置を修正します。
     rate = ggd.get_rate()
-    #import ipdb; ipdb.set_trace()
-    #1から取り出せるように調節します。
-    start = start - (start % layer)
+    starts = get_starts(start, stop, layer, rate)
+ 
+   #エラーでも強制終了はさせません。
+    if(len(starts) == 0):
+        print("-" * 50)
+        print("can't get data with {0} layer".format(layer))
 
-    start = start * rate + 1
-    for st in range(start , stop, layer * rate * 3):
+    if config.CONF["debug"]:
+        print("starts: {0}".format(starts))
+
+    for st in starts:
         #2塩基ずれることは仕方ないものとします。
         ggd.get_image(st, st + layer * rate - 1)
+
+
+def get_starts(start, stop,layer, rate):
+    fix = lambda start, layer: start - (start % layer ) + 1
+    get_start = lambda start, layer: layer + 1 if(start <= layer) else fix(start, layer)
+    new_start = get_start(start * rate, layer * rate)
+    starts = range(new_start, stop - layer * rate, layer * rate * 3)
+
+    #最後中途半端な画像も取り出します。
+    last = fix(stop - 2 * layer * rate + 1, layer * rate)
+    if last > new_start:
+        starts.append(last)
+
+    return starts
 
 
 def get_width(layer):
     """
     layerに対する一枚当りの画像の大きさを指定します。
+    バグの混在になりやすいので変更不可です。
     """
-    width = config.CONF["image_max_width"]
     if(layer <= 10 ** 3):
-        return width
+        return 8000
     else:
-        return width / 10
+        return 800
 
 
-def start(conf):
+def request(conf):
     for layer in conf["layer"]:
         w = get_width(layer)
         conf["image_max_width"] = w
@@ -390,11 +404,13 @@ def main():
     usage = \
 """
 使い方
-./getdata.py -p passwd
+./getdata.py -p passwd --start 1 --stop 30000000(30M)
 各種設定はconfig.pyで行います。
 """
     p = argparse.ArgumentParser(usage=usage)
-    p.add_argument("-p", dist="passwd")
+    p.add_argument("-p", dest="passwd")
+    p.add_argument("--start", dest="start")
+    p.add_argument("--stop", dest="stop")
     args = p.parse_args()
 
     #パスワードを入力します。
@@ -406,11 +422,29 @@ def main():
             passwd = config.CONF["passwd"]
     else:
         passwd = args.passwd
-    
-    config.CONF["passwd"] = passwd
-    sys.exit()
-    #設定完了
-    start(config.CONF)
+
+    #start, stopを設定します。
+    #指定しない場合は設定ファイルのままです。
+    start = args.start
+    stop = args.stop
+
+    if start is None:
+        start = config.CONF["start"]
+
+    if stop is None:
+        stop = config.CONF["max_length"]
+
+    assert  int(start) < int(stop), "値が間違っています。"
+
+   #設定完了(コピーを渡さないとまずい)
+    conf = config.CONF.copy()
+    conf["passwd"] = passwd
+    conf["start"] = int(start)
+    conf["stop"] = int(stop)
+    #ディレクトリ作成
+    make_rootpath(conf["save_root"])
+
+    request(conf)
 
 
 if __name__ == "__main__":
