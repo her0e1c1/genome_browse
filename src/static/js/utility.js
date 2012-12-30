@@ -206,6 +206,8 @@ Utility.prototype = {
 	   123.4k
 	   12.34k
 	   1.234k
+
+	   +1すれば3桁表示
 	*/
 	divided10: function(number, times){
 		d = this.get_digits(number)

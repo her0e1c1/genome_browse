@@ -776,7 +776,8 @@ Box.prototype = {
 		*/
 		_update_click_button: function (left_or_right, size){
 			var scroll_size = (this.layer * left_or_right) * size;
-			if(scroll_size + this.view.start > 0){
+			if(scroll_size + this.view.start > 0 &&
+			  scroll_size + this.get_view().stop <= GS.MAX_LENGTH){
 				this.slide_with_offset(scroll_size, "view");
 				this.update();
 			}
@@ -1029,6 +1030,11 @@ Box.prototype = {
 				flag_drag = false;
 			});
 
+			node.mouseout(function(event){
+				flag = false;
+				flag_drag = false;
+			});
+
 		},
 
 		/*
@@ -1135,6 +1141,11 @@ Box.prototype = {
 				flag = false;
 				flag_drag = false;
 			});
+
+			node.mouseout(function(event){
+				flag = false;
+				flag_drag = false;
+			});
 		},
 
 		/*
@@ -1169,7 +1180,8 @@ Box.prototype = {
 				n = n.children(":last");
 				n.attr("value", layers[i]);
 				//to do 表示の仕方を変更する1000 => 1k
-				n.text("show " + layers[i] + "bp");
+				l = Utility.change_number(layers[i])
+				n.text("show " + l + "bp");
 			}
 		},
 
@@ -1313,7 +1325,7 @@ Box.prototype = {
 				ctx.drawRect(vertical_line);
 
 				 text.text = p;
-				 text.x = x;
+				 text.x =x;
 				 ctx.drawText(text);
 			}
 
@@ -1567,10 +1579,3 @@ function default_image(){
 	$(this).css("width", GS.IMAGE_WIDTH);
 	$(this).css("height", 300);
 }
-
-/*
-todo:
-画面の端でバグ
-trackのcookie
-スクロールでのcookie
-*/
