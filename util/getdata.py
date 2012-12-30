@@ -16,7 +16,8 @@ import ConfigParser
 import requests
 from BeautifulSoup import BeautifulSoup
 import config  # 設定ファイルを読み込みます。
-
+import operator
+import functools
 
 class GraphicData:
 
@@ -73,6 +74,9 @@ class GetGBrowseData:
             if not os.path.isdir(dir):
                 os.mkdir(dir)
 
+        assert len(self._track_dirs) > 0, "trackの設定が間違っています。"
+
+
     #requests.get/postのラッパー
     def get(self, url=None):
         if url is None:
@@ -92,6 +96,10 @@ class GetGBrowseData:
 
     #ここから呼び出します。
     def get_image(self, start, stop, count=3):
+        #import ipdb;ipdb.set_trace()
+        if self._isfile(start, stop):
+            print("{0}..{1}の画像は存在しています。".format(start, stop))
+            return
         res = self._post_from_to_genome(start, stop)
         res = self._post_to_get_imagepath()
         paths = self._parse_to_get_imagepath(res)
@@ -99,10 +107,38 @@ class GetGBrowseData:
         for (track, path) in paths.items():
             #他の画像が得られた場合はやり直します。
             #ただし3回までです。
-            if path.find("grey.png") != -1 and count > 0:
-                self.get_image(start, stop, count-1)
+            if path.find("grey.png") != -1:
+                if count > 0:
+                    self.get_image(start, stop, count-1)
+                else:
+                    print("-" * 50)
+                    print("{0}..{1}は取得出来ませんでした。".format(start, stop))
             else:
                 self._save_image(GraphicData(track, path, start, stop))
+
+    def _isfile(self, start, stop):
+        """
+        既に画像が存在いている場合はリクエストしません。
+        _start.pngを確認します。
+        """
+        #各トラックに１つでも画像が抜けている場合はリクエストします。
+        ret = []
+
+        #名前を取得します。
+        layer = stop - start + 1
+        name = "_{0}.png".format(start - layer)
+
+        #実際の層に変更します。
+        rate = self.get_rate()
+        layer = layer / rate
+        
+        #ファイルパスを作成します。
+        for key, track in self._track_dirs.items():
+            dir = os.path.join(track, str(layer))
+            file = os.path.join(dir, name)
+            ret.append(os.path.isfile(file))
+
+        return functools.reduce(operator.and_, ret)
 
     #serverへpostする関数
     def _post_from_to_genome(self, start, stop):
@@ -146,7 +182,7 @@ class GetGBrowseData:
         #データの保存をします。
         rate = self.get_rate()
         layer = gd.stop - gd.start + 1
-        start = gd.__dict__["start"] - layer
+        start = gd.start - layer
         layer = layer / rate
         dir = self._track_dirs[gd.track]
 
