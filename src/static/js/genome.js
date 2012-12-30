@@ -82,6 +82,7 @@ GlobalSettings.prototype = {
 		this.OVERVIEW_HEIGHT = 50;
 		this.REGION_HEIGHT = 50;
 		this.DETAILS_SCALE_HEIGHT = 50;
+		this.RULER_WIDTH = 46;
 	},
 
 	/*
@@ -384,6 +385,7 @@ Box.prototype = {
 			this._init_set_options();
 			this._init_overview();
 			this._init_details();
+			this._init_ruler();
 
 			//event登録
 			this._event_controler_select();
@@ -563,7 +565,7 @@ Box.prototype = {
 			  初期化した後もupdateします。
 			*/
 			this._update_region(start , layer, GS.REGION_NUMBER);
-			this._update_details(start, layer)
+			this._update_details(start, layer);
 
 			/*
 			  残像が残る可能性があります。
@@ -581,6 +583,7 @@ Box.prototype = {
 			}
 			//描画
 			this.show();
+			this._update_ruler();
 		},
 		
 		/*
@@ -666,6 +669,7 @@ Box.prototype = {
 			this._update_overview();
 			this._update_region(this.view.start, this.layer, GS.REGION_NUMBER);
 			this._update_details(this.view.start, this.layer);
+			this._update_ruler();
 			/*
 			  条件に合致したらimagelistを書き換えます。
 			  (IMAGE_NUMBER) - 1 / 2回
@@ -1173,6 +1177,72 @@ Box.prototype = {
 			//details
 		},
 
+		_update_ruler: function(){
+			var node= $("#ruler_rect");
+			var height = $("#wrap_show_images").css("height");
+			node.css("height", height);
+
+			var view = this.get_view();
+			var layer = this.get_layer();
+			var salt = GS.RULER_WIDTH / 2;
+			var slide = Utility.px2int($("#ruler img").css("left"));
+			var dna = GS.change_image2dna(slide + salt, view.start,layer);
+			$("#ruler_data").text(Math.floor(dna));
+		},
+
+		_init_ruler: function(){
+			var self = this;
+			var node = $("#ruler img");
+			$("#ruler_rect").hide()
+			node.click(function(event){
+				$("#ruler_rect").toggle();
+			});
+
+			var path = GS.PATH.images + "browser/ruler-icon.png"
+			node.attr("src", path);
+			node= $("#ruler_rect");
+			node.css("height", 0);
+			var flag_drag = false;
+			var startX;
+			var left;
+			//ルーラの大きさです。
+			var WIDTH = GS.RULER_WIDTH;
+
+			node = $("#ruler_rect, #ruler img");
+			node.mousedown(function(event){
+				flag_drag = true;
+				startX = event.screenX;
+				left = Utility.px2int($(this).css("left"));
+				return false;
+			});
+
+			//マウスダウンしている間は動かす様にします。
+			//offsetXは使えません。
+			$("*").mousemove(function(event){
+				if(flag_drag){
+					
+					var offset = event.screenX - startX;
+					var slide = left + offset
+					if(0 <= slide && slide <= GS.IMAGE_WIDTH - GS.RULER_WIDTH){
+						node.css("left", slide + "px");
+						var view = self.get_view();
+						var layer = self.get_layer();
+						var salt = GS.RULER_WIDTH / 2;
+						var dna = GS.change_image2dna(slide + salt, view.start,layer);
+						$("#ruler_data").text(Math.floor(dna));
+					}
+				}
+			});
+
+			node.mouseup(function(event){
+				flag_drag = false;
+			})
+				.mouseout(function(event){
+					//flag_drag = false;
+				});
+		},
+		
+
 		_init_set_options: function(){
 			var layers = GS.LAYER_VALUES;
 			for(var i = 0 ; i < layers.length; i++){
@@ -1419,6 +1489,7 @@ window.onload = function(){
 			init_datasources(GS.datasources);
 			init_seq_ids(GS.seq_ids[loads.datasource]);
 			init_tracks(loads.datasource, loads.seq_id);
+		
 
 			$("#datasources").val(loads.datasource);
 			$("#seq_ids").val(loads.seq_id);
@@ -1516,6 +1587,7 @@ window.onload = function(){
 			location.reload();
 		});
 	}
+
 
 	function init_seq_ids(ids){
 		var node = $("#seq_ids");

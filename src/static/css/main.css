@@ -91,6 +91,38 @@ canvas.box{
 }
 
 /*
+ * ruler
+ */
+#ruler{
+	z-index:1;
+	height:10px;
+}
+#ruler img{
+	position:relative;
+	left: 0px;
+	z-index:2;
+	top:-20px;
+}
+#ruler_median{
+	border:1px solid black;
+	margin: 0 auto;
+	width:2px;
+	height:inherit;
+}
+#ruler_data{
+	width:50;
+}
+#ruler_rect{
+	top:-20px;
+	position:relative;
+	border-left:1px solid black;
+	border-right:1px solid black;
+	width:50px;
+	z-index:1;
+	left:0;
+	/* float:left; */
+}
+/*
  *  search
  */
 
